@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Oryx and Crake Interactive Study Guide</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f4f7f9;margin:0;color:#333;line-height:1.5}
+header{background:#2c3e50;color:white;padding:20px;text-align:center}
+header p{max-width:640px;margin:8px auto 0;color:#dfe6ec}
+nav{display:flex;flex-wrap:wrap;justify-content:center;background:#34495e}
+nav button{margin:5px;padding:10px 15px;border:none;border-radius:6px;background:#ecf0f1;cursor:pointer;font-size:14px}
+nav button.current{background:#1abc9c;color:white}
+section{display:none;padding:20px;max-width:1000px;margin:auto}
+section.active{display:block}
+.card{background:white;padding:15px 20px;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,.1);margin:10px 0}
+.card h3{margin-top:0}
+.note{border-left:4px solid #1abc9c;padding-left:14px;color:#555}
+.quiz-question{margin:15px 0}
+input[type=text],textarea{width:100%;padding:8px;box-sizing:border-box;border:1px solid #ccd;border-radius:6px;font:inherit}
+details{margin:8px 0;background:white;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,.1)}
+details summary{padding:14px 20px;cursor:pointer;font-weight:bold}
+details .inner{padding:0 20px 16px}
+dl.terms dt{font-weight:bold;margin-top:10px}
+dl.terms dd{margin:2px 0 0 0;color:#555}
+.two-col{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px}
+button.action{padding:10px 16px;border:none;border-radius:6px;background:#2c3e50;color:white;cursor:pointer;font-size:14px}
+footer{text-align:center;padding:20px;color:#666}
+</style>
+</head>
+<body>
+<header>
+<h1>Oryx and Crake Interactive Study Guide</h1>
+<p>A companion for high school English students reading Margaret Atwood's novel.</p>
+</header>
+
+<nav>
+<button class="current" onclick="showTab('overview',this)">Overview</button>
+<button onclick="showTab('characters',this)">Characters</button>
+<button onclick="showTab('themes',this)">Themes</button>
+<button onclick="showTab('guide',this)">Study Guide</button>
+<button onclick="showTab('reading',this)">Reading Journal</button>
+<button onclick="showTab('quiz',this)">Quiz</button>
+<button onclick="showTab('essay',this)">Essay Prep</button>
+</nav>
+
+<section id="overview" class="active">
+<h2>About the Novel</h2>
+<div class="card">
+<p><strong>Author:</strong> Margaret Atwood (Canadian, b. 1939)</p>
+<p><strong>Published:</strong> 2003 — the first book of the MaddAddam trilogy, followed by <em>The Year of the Flood</em> (2009) and <em>MaddAddam</em> (2013)</p>
+<p><strong>Genre:</strong> Speculative fiction. Atwood prefers this label to "science fiction" because, she argues, the novel contains nothing humanity has not already invented or is not already capable of inventing.</p>
+<p><strong>Awards and recognition:</strong> Shortlisted for the Booker Prize and the Orange Prize (now the Women's Prize for Fiction)</p>
+</div>
+
+<div class="card">
+<h3>What the Novel Is About</h3>
+<p>The story opens on a ruined coastline where a man who calls himself Snowman may be the last human being alive. He sleeps in a tree, scavenges for food, and acts as a reluctant prophet to the Crakers — gentle, genetically engineered people who were designed to replace us and who have no idea what happened to the world that made them.</p>
+<p>As Snowman struggles to survive, the novel moves backward into his memories. He was once Jimmy, a boy growing up inside a walled corporate Compound in a near-future North America where biotech companies hold more power than governments, the climate has gone haywire, and the wealthy live sealed off from the sprawling, dangerous "pleeblands" outside. Two relationships define his life: his friendship with Crake, a brilliant and coldly logical classmate, and his love for Oryx, a woman whose past is bound up in the exploitation the novel's society runs on.</p>
+<p>Slowly the two timelines converge, and we learn how Jimmy's world ended and what role he, Crake, and Oryx played in its ending.</p>
+</div>
+
+<div class="card">
+<h3>How the Book Is Built</h3>
+<ul>
+<li><strong>Two timelines.</strong> Chapters alternate between Snowman's present (told in present tense) and Jimmy's past (told in past tense). Pay attention to which one you are in — the shift is often the first signal of a new section.</li>
+<li><strong>An unreliable, grieving narrator.</strong> Everything we learn about Crake and Oryx comes filtered through Jimmy, who is lonely, guilty, and sometimes evasive. Ask what he leaves out and why.</li>
+<li><strong>Invented words.</strong> Atwood coins dozens of corporate brand names and hybrid-animal names (pigoons, rakunks, ChickieNobs). They sound comic, but each one makes a point about what this society values.</li>
+<li><strong>Words as a theme.</strong> Snowman is obsessed with vocabulary and clings to old words no one else remembers. Notice how language — and its loss — runs through the whole book.</li>
+</ul>
+</div>
+
+<div class="card">
+<h3>Why It Matters Now</h3>
+<p>Atwood began writing the novel in 2001. More than two decades later, its concerns — gene editing, lab-grown meat, pandemic risk, climate disruption, the power of tech corporations, online content that numbs people to suffering — have moved from speculation to the news. Reading the book today is partly an exercise in asking which of its warnings we have already stopped noticing.</p>
+</div>
+
+<div class="card note">
+<h3>A Note on Content</h3>
+<p>This is a novel for mature readers. It depicts violence, drug use, sexual content, and the exploitation of children, mostly through Jimmy's memories and Oryx's account of her childhood. Atwood presents these things critically, as evidence of what the society has become, not for shock value. If a passage is difficult, that discomfort is usually the point — bring it to class discussion.</p>
+</div>
+
+<div class="card">
+<h3>Before You Read</h3>
+<ul>
+<li>What responsibilities do scientists have to society? Who should decide what research is off-limits?</li>
+<li>Can technology solve every human problem — and can it solve the problems it creates?</li>
+<li>What happens when corporations become more powerful than governments?</li>
+<li>If you could redesign human beings to remove our worst traits, would you? Which traits would you remove, and what might you lose along with them?</li>
+<li>What makes a story "science fiction" rather than a story about the present?</li>
+</ul>
+</div>
+</section>
+
+<section id="characters">
+<h2>Major Characters</h2>
+<div class="card"><h3>Snowman / Jimmy</h3><p>The narrator and possibly the last surviving human. As Jimmy, he was a "word person" in a world that only valued "numbers people" — a mediocre student, a charming cynic, a neglected son. As Snowman, he is a starving, sunburnt survivor haunted by memory and guilt.</p></div>
+<div class="card"><h3>Crake (Glenn)</h3><p>Jimmy's best friend from adolescence: a genius who sees humanity as a design problem. Calm, rational, and unsettlingly detached, Crake's vision for fixing the world drives the novel's central conflict. His nickname comes from an extinct bird in the online game Extinctathon.</p></div>
+<div class="card"><h3>Oryx</h3><p>A woman from an unnamed poor country, sold as a child and passed through a series of exploitative situations before Jimmy and Crake encounter her. Serene and unreadable, she refuses to see herself as a victim, which frustrates Jimmy and raises the novel's hardest questions about compassion, blame, and survival.</p></div>
+<div class="card"><h3>The Crakers (Children of Crake)</h3><p>Genetically engineered humanoids designed to be peaceful, vegetarian, disease-free, and free of jealousy, religion, and the desire to own things. Their innocent questions force Snowman to invent myths — and force readers to ask whether a species without our flaws is still human.</p></div>
+<div class="card"><h3>Jimmy's Parents</h3><p>His father is a genographer at OrganInc Farms, comfortable with the work he does. His mother, a former microbiologist, grows disgusted with the Compound world and eventually acts on that disgust. Their marriage shapes Jimmy's distrust and his hunger for approval.</p></div>
+<div class="card"><h3>Sharon and Ramona, Uncle Pete, Bernice, and the Rejoov staff</h3><p>Minor figures who show how ordinary people adapt to an extraordinary system — through loyalty, indifference, careerism, or quiet rebellion.</p></div>
+</section>
+
+<section id="themes">
+<h2>Major Themes</h2>
+<div class="card">
+<ul>
+<li><strong>Science and Ethics:</strong> Should scientists do something simply because they can? The novel separates knowledge from wisdom and asks who is accountable when they come apart.</li>
+<li><strong>Environmental Destruction:</strong> Rising seas, vanished seasons, and extinct species are the background noise of Jimmy's childhood. Collapse here is slow and normalized before it is sudden.</li>
+<li><strong>Consumerism and Corporate Power:</strong> Corporations sell beauty, youth, pleasure, and even disease. Profit outweighs morality, and the Compounds exist to protect profit.</li>
+<li><strong>Human Nature:</strong> What qualities make us human — art, love, cruelty, curiosity? Crake tries to engineer some of them away. The book asks what is lost.</li>
+<li><strong>Language and Storytelling:</strong> Jimmy hoards words; the Crakers need myths. The novel suggests that stories are both how humans survive and how they deceive themselves.</li>
+<li><strong>Exploitation and Looking Away:</strong> From online cruelty to Oryx's childhood, the novel examines how people learn to watch suffering without feeling responsible for it.</li>
+<li><strong>Power and Control:</strong> Knowledge, surveillance, and secrecy allow a few to manipulate the many — including the people closest to them.</li>
+</ul>
+</div>
+</section>
+
+<section id="guide">
+<h2>Study Guide</h2>
+<div class="card note">
+<p>The novel is divided into fifteen numbered parts. This guide groups them into five reading blocks. Each block lists what to watch for and discussion questions. Spoilers are kept inside the block where they occur, so read only as far as you have gotten in the book.</p>
+</div>
+
+<details open>
+<summary>Block 1 — Parts 1 to 3: Snowman's Present, Jimmy's Childhood</summary>
+<div class="inner">
+<p><strong>Watch for:</strong> the two timelines and tense shifts; the Crakers' questions and Snowman's answers; the Compounds versus the pleeblands; the pigoons and the bonfire of diseased animals; Jimmy's parents' arguments about OrganInc.</p>
+<ul>
+<li>What do we learn about the present-day world in the opening pages purely through Snowman's physical condition and surroundings?</li>
+<li>Why does Snowman invent rules and stories for the Crakers? What does he gain from being their prophet?</li>
+<li>How does Atwood use the pigoons to introduce questions about the boundary between humans and animals?</li>
+<li>Compare Jimmy's mother and father. Which parent does the novel seem to side with, if either?</li>
+<li>What is the effect of Jimmy's childish, half-understanding point of view on how we see the Compound?</li>
+</ul>
+</div>
+</details>
+
+<details>
+<summary>Block 2 — Parts 4 to 6: Crake, Oryx, and Growing Up Online</summary>
+<div class="inner">
+<p><strong>Watch for:</strong> Jimmy's mother's departure; the arrival of Glenn/Crake at HelthWyzer High; the games the boys play (Extinctathon, Blood and Roses); the websites they watch; the first appearance of Oryx on screen; Oryx's own account of her childhood.</p>
+<ul>
+<li>How does the loss of his mother change Jimmy? Track how he treats women afterward.</li>
+<li>What does Crake's choice of games and screen names reveal about how he thinks?</li>
+<li>Jimmy and Crake watch disturbing content with detachment. How does the novel make the reader complicit in that watching?</li>
+<li>Oryx tells her story calmly and resists Jimmy's pity. Why does Atwood give her this tone? Is it strength, denial, or something else?</li>
+<li>How does Atwood use the boys' shared viewing of a single image to bind the three main characters together?</li>
+</ul>
+</div>
+</details>
+
+<details>
+<summary>Block 3 — Parts 7 to 9: Watson-Crick and Martha Graham</summary>
+<div class="inner">
+<p><strong>Watch for:</strong> the contrast between Crake's elite science institute and Jimmy's crumbling arts college; ChickieNobs and other inventions; the role of CorpSeCorps; Jimmy's string of relationships; the fate of Jimmy's mother; Crake's theory about the "wrong" solutions to human problems.</p>
+<ul>
+<li>What does the gap between Watson-Crick and Martha Graham say about how this society values science versus the humanities?</li>
+<li>ChickieNobs are played for laughs but also horror. What is the argument hidden in the joke?</li>
+<li>Why does Crake want Jimmy to see the "Student Services" and the research projects at Watson-Crick? What is he testing?</li>
+<li>Jimmy writes advertising copy for products he knows are hollow. Is he a victim of the system or a participant in it?</li>
+<li>How does Snowman, in the present, react to remembering these years? Where do you see guilt surfacing?</li>
+</ul>
+</div>
+</details>
+
+<details>
+<summary>Block 4 — Parts 10 to 12: Paradice</summary>
+<div class="inner">
+<p><strong>Watch for:</strong> Crake's recruitment of Jimmy to RejoovenEsense; the BlyssPluss pill and its hidden purpose; the Paradice dome and the Crakers' design features; Oryx's role as their teacher; Jimmy and Oryx's affair; Crake's comments about love, art, and God.</p>
+<ul>
+<li>List the traits Crake has engineered into or out of the Crakers. For each, ask: is this an improvement? What is lost?</li>
+<li>Crake says art is merely a way of attracting mates and that God is a "cluster of neurons." How does the novel respond to these claims, and does it agree with him?</li>
+<li>Why does Crake want a "word person" involved in a project of pure science?</li>
+<li>Oryx distributes BlyssPluss around the world. How much does she know? How much does Jimmy choose not to know?</li>
+<li>Is Paradice a utopia or a prison? Consider the name's spelling.</li>
+</ul>
+</div>
+</details>
+
+<details>
+<summary>Block 5 — Parts 13 to 15: The Flood and After</summary>
+<div class="inner">
+<p><strong>Watch for:</strong> the outbreak and its spread on screens; Jimmy sealed inside Paradice; Crake's final return; Snowman leading the Crakers out; the present-day journey back to the dome; the footprints on the beach and the final decision.</p>
+<ul>
+<li>Reconstruct the sequence of Crake's plan. When did it begin? Who knew what, and when?</li>
+<li>Crake made Jimmy responsible for the Crakers. Why Jimmy? Was Crake's faith in him justified?</li>
+<li>Why does Snowman invent a theology for the Crakers when Crake specifically tried to prevent religion from arising? Is this a betrayal of Crake or an act of care?</li>
+<li>The novel ends without telling us what Snowman does. What are his options, and what does each would mean for the book's view of human nature?</li>
+<li>Is Crake a villain, a visionary, or a symptom of the world that produced him? Where does the novel's sympathy lie?</li>
+</ul>
+</div>
+</details>
+
+<h2 style="margin-top:30px">Glossary of Invented Terms</h2>
+<div class="card two-col">
+<dl class="terms">
+<dt>Compounds</dt><dd>Gated, guarded corporate communities where scientists and their families live and work.</dd>
+<dt>Pleeblands</dt><dd>The unregulated cities outside the Compounds — crowded, polluted, and dangerous, but freer.</dd>
+<dt>CorpSeCorps</dt><dd>The corporations' private security force, which has replaced public police and courts.</dd>
+<dt>OrganInc Farms</dt><dd>Jimmy's father's employer; raises pigoons for human organ transplants.</dd>
+<dt>HelthWyzer</dt><dd>A pharmaceutical Compound where Jimmy and Crake attend high school.</dd>
+<dt>RejoovenEsense</dt><dd>The biotech giant that funds Crake's Paradice Project.</dd>
+<dt>Watson-Crick Institute</dt><dd>The elite science school Crake attends, named for the discoverers of DNA's structure.</dd>
+<dt>Martha Graham Academy</dt><dd>Jimmy's underfunded arts college, named for a modern dance pioneer.</dd>
+</dl>
+<dl class="terms">
+<dt>Pigoons</dt><dd>Pigs engineered to grow human organs; later, dangerous feral predators.</dd>
+<dt>Rakunks</dt><dd>Raccoon-skunk hybrids bred as pets. Jimmy's childhood companion is one.</dd>
+<dt>Wolvogs</dt><dd>Dogs bred to look friendly and attack without warning.</dd>
+<dt>ChickieNobs</dt><dd>Headless, brainless chicken organisms that grow only edible parts.</dd>
+<dt>BlyssPluss</dt><dd>Crake's pill marketed to improve pleasure and health — with a concealed purpose.</dd>
+<dt>Paradice</dt><dd>The sealed dome where the Crakers are created and raised.</dd>
+<dt>Extinctathon</dt><dd>An online trivia game about extinct species, run by the mysterious MaddAddam group.</dd>
+<dt>Snowman</dt><dd>Jimmy's chosen name after the collapse, from the "Abominable Snowman": a creature that may or may not exist.</dd>
+</dl>
+</div>
+
+<h2 style="margin-top:30px">Tracking Activities</h2>
+<div class="card">
+<ul>
+<li><strong>Timeline chart.</strong> Keep two columns in your journal — Snowman's present and Jimmy's past — and log each chapter's key event. At the end, mark where the two timelines meet.</li>
+<li><strong>Word hoard.</strong> Snowman recites rare words to keep them alive. Collect ten of them as you read and look them up. Why might he choose these particular words?</li>
+<li><strong>Craker design review.</strong> Make a table of every engineered Craker trait, Crake's reason for it, and a possible unintended consequence.</li>
+<li><strong>Advertising file.</strong> Collect the product names and slogans Atwood invents. Rewrite one as an honest advertisement.</li>
+<li><strong>Trial of Crake.</strong> In groups, prepare a prosecution and a defense. Use only evidence Jimmy actually witnesses, and note where the case depends on his interpretation.</li>
+</ul>
+</div>
+</section>
+
+<section id="reading">
+<h2>Reading Journal</h2>
+<div class="card">
+<p>Use this space to track your thinking while reading. Try to write a few lines after every reading block: a question, a prediction, a passage that stuck with you.</p>
+<textarea id="journal" rows="12"></textarea><br><br>
+<button class="action" onclick="saveJournal()">Save notes</button>
+<p id="saveMsg"></p>
+</div>
+</section>
+
+<section id="quiz">
+<h2>Knowledge Check</h2>
+<div class="card">
+<div class="quiz-question">
+<p>1. What is Snowman's earlier name?</p>
+<input type="text" id="q1">
+</div>
+<div class="quiz-question">
+<p>2. What was Crake's real name before he took his nickname?</p>
+<input type="text" id="q2">
+</div>
+<div class="quiz-question">
+<p>3. What are the walled corporate communities where scientists live called?</p>
+<input type="text" id="q3">
+</div>
+<div class="quiz-question">
+<p>4. Which engineered animal appears both in Jimmy's childhood and as a threat in Snowman's present?</p>
+<input type="text" id="q4">
+</div>
+<div class="quiz-question">
+<p>5. In two or three sentences, explain what role Crake plays in the story.</p>
+<input type="text" id="q5">
+</div>
+<button class="action" onclick="checkQuiz()">Check answers</button>
+<p id="quizResults"></p>
+</div>
+</section>
+
+<section id="essay">
+<h2>Essay Preparation</h2>
+<div class="card">
+<h3>Potential Essay Topics</h3>
+<ol>
+<li>How does Atwood use speculative fiction to critique present-day society?</li>
+<li>Is Crake a visionary, a villain, or both?</li>
+<li>How does memory shape Jimmy's understanding of the world — and how reliable is he as a narrator?</li>
+<li>What warnings does the novel present about technology, and which of them are warnings about people rather than machines?</li>
+<li>Oryx refuses to see herself as a victim. How does her perspective complicate the novel's treatment of exploitation?</li>
+<li>Why does the novel treat language and storytelling as matters of survival?</li>
+</ol>
+</div>
+<div class="card">
+<h3>CER Organizer</h3>
+<p><strong>Claim:</strong></p>
+<input type="text" id="cerClaim">
+<p><strong>Evidence:</strong> (quote or paraphrase with part number)</p>
+<input type="text" id="cerEvidence">
+<p><strong>Reasoning:</strong></p>
+<input type="text" id="cerReasoning"><br><br>
+<button class="action" onclick="saveCER()">Save organizer</button>
+<p id="cerMsg"></p>
+</div>
+</section>
+
+<footer>
+Interactive Study Guide for Educational Use
+</footer>
+
+<script>
+function showTab(tab,btn){
+ document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
+ document.getElementById(tab).classList.add('active');
+ document.querySelectorAll('nav button').forEach(b=>b.classList.remove('current'));
+ if(btn) btn.classList.add('current');
+ window.scrollTo(0,0);
+}
+
+function saveJournal(){
+ try{
+  localStorage.setItem('oryxJournal',document.getElementById('journal').value);
+  document.getElementById('saveMsg').textContent='Notes saved on this device.';
+ }catch(e){
+  document.getElementById('saveMsg').textContent='Could not save — your browser is blocking local storage.';
+ }
+}
+
+function saveCER(){
+ try{
+  localStorage.setItem('oryxCER',JSON.stringify({
+   c:document.getElementById('cerClaim').value,
+   e:document.getElementById('cerEvidence').value,
+   r:document.getElementById('cerReasoning').value
+  }));
+  document.getElementById('cerMsg').textContent='Organizer saved on this device.';
+ }catch(e){
+  document.getElementById('cerMsg').textContent='Could not save — your browser is blocking local storage.';
+ }
+}
+
+window.onload=function(){
+ try{
+  document.getElementById('journal').value=localStorage.getItem('oryxJournal')||'';
+  const cer=JSON.parse(localStorage.getItem('oryxCER')||'{}');
+  document.getElementById('cerClaim').value=cer.c||'';
+  document.getElementById('cerEvidence').value=cer.e||'';
+  document.getElementById('cerReasoning').value=cer.r||'';
+ }catch(e){}
+}
+
+function checkQuiz(){
+ let score=0;
+ const v=id=>document.getElementById(id).value.toLowerCase().trim();
+ if(v('q1').includes('jimmy')) score++;
+ if(v('q2').includes('glenn')) score++;
+ if(v('q3').includes('compound')) score++;
+ if(v('q4').includes('pigoon')) score++;
+ if(v('q5').length>40) score++;
+ document.getElementById('quizResults').textContent='Score: '+score+'/5'+(score<5?' — review the Characters and Study Guide tabs and try again.':' — well done.');
+}
+</script>
+</body>
+</html>
