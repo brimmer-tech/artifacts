@@ -1,0 +1,1801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BioGlow Lab: Bacterial Transformation & Molecular Biology Suite</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:ital,wght@0,400;0,600;1,400&display=swap');
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #030712;
+      color: #e5e7eb;
+    }
+    .font-mono-code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Dynamic chamber glow animations */
+    @keyframes blue-fluorescence {
+      0%, 100% { box-shadow: 0 0 35px rgba(56, 189, 248, 0.4) inset, 0 0 25px rgba(34, 197, 94, 0.4); }
+      50% { box-shadow: 0 0 55px rgba(56, 189, 248, 0.6) inset, 0 0 40px rgba(34, 197, 94, 0.7); }
+    }
+    .chamber-fluoresce {
+      animation: blue-fluorescence 3s infinite ease-in-out;
+    }
+    /* Quest Drawer transition */
+    .drawer-transition {
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    /* Custom scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0b0f19; }
+    ::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #374151; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-950 text-slate-100 antialiased overflow-x-hidden">
+
+  <!-- ========================================================================= -->
+  <!-- NAVIGATION BAR -->
+  <!-- ========================================================================= -->
+  <header class="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-4 lg:px-8 py-3">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- Brand & Title -->
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/20 text-slate-950 font-black">
+          <i class="ph-bold ph-dna text-2xl"></i>
+        </div>
+        <div>
+          <h1 class="text-lg md:text-xl font-bold tracking-tight text-white flex items-center gap-2">
+            BioGlow <span class="text-emerald-400 font-mono-code text-[11px] px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-500/40">Lab Suite</span>
+          </h1>
+          <p class="text-[11px] text-slate-400 hidden sm:block">AP Bio Lab 6 & MiniOne M6300 Bacterial Transformation</p>
+        </div>
+      </div>
+
+      <!-- Module Tabs -->
+      <nav class="flex items-center bg-slate-950/80 p-1 rounded-xl border border-slate-800 text-xs md:text-sm font-medium">
+        <button id="tab-btn-bench" onclick="switchTab('bench')" class="tab-btn px-3 py-1.5 rounded-lg flex items-center gap-2 bg-emerald-600 text-white shadow transition">
+          <i class="ph-bold ph-thermometer-hot"></i>
+          <span>Virtual Bench & Heat Shock</span>
+        </button>
+        <button id="tab-btn-winston" onclick="switchTab('winston')" class="tab-btn px-3 py-1.5 rounded-lg flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-900 transition">
+          <i class="ph-bold ph-sun"></i>
+          <span>Winston Reader & Operon</span>
+        </button>
+        <button id="tab-btn-calculator" onclick="switchTab('calculator')" class="tab-btn px-3 py-1.5 rounded-lg flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-900 transition">
+          <i class="ph-bold ph-calculator"></i>
+          <span>TE Calculator</span>
+        </button>
+        <button id="tab-btn-review" onclick="switchTab('review')" class="tab-btn px-3 py-1.5 rounded-lg flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-900 transition">
+          <i class="ph-bold ph-book-open-text"></i>
+          <span>AP Review & Protocols</span>
+        </button>
+      </nav>
+
+      <!-- Utility Actions: Guided Tour, Quests, Sound -->
+      <div class="flex items-center space-x-2">
+        <button onclick="startTour()" class="px-2.5 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold flex items-center gap-1.5 transition">
+          <i class="ph-bold ph-navigation-arrow"></i>
+          <span class="hidden md:inline">Guided Tour</span>
+        </button>
+        
+        <button onclick="toggleQuestDrawer()" class="relative px-2.5 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 text-xs font-semibold flex items-center gap-1.5 transition">
+          <i class="ph-bold ph-trophy"></i>
+          <span class="hidden md:inline">Quests</span>
+          <span id="quest-badge-counter" class="w-4 h-4 rounded-full bg-indigo-500 text-[10px] text-white flex items-center justify-center font-bold">0/5</span>
+        </button>
+
+        <button onclick="toggleAudio()" id="audio-toggle-btn" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" title="Toggle Laboratory Audio">
+          <i id="audio-icon" class="ph-bold ph-speaker-high text-emerald-400"></i>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ========================================================================= -->
+  <!-- "NOVICE TO BIOTECH PRO" QUESTS DRAWER (SLIDE-OVER) -->
+  <!-- ========================================================================= -->
+  <div id="quest-drawer-overlay" onclick="toggleQuestDrawer()" class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-50 hidden transition-opacity"></div>
+  <div id="quest-drawer" class="fixed top-0 right-0 h-full w-80 md:w-96 bg-slate-900 border-l border-slate-800 z-50 p-6 flex flex-col justify-between transform translate-x-full drawer-transition shadow-2xl">
+    <div>
+      <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
+        <div class="flex items-center gap-2">
+          <div class="p-2 rounded-lg bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+            <i class="ph-fill ph-medal text-xl"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-white text-base">Biotech Pro Quests</h3>
+            <p class="text-xs text-slate-400">Transform competent bacteria like a scientist</p>
+          </div>
+        </div>
+        <button onclick="toggleQuestDrawer()" class="text-slate-400 hover:text-white p-1 rounded-lg">
+          <i class="ph-bold ph-x text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Quest List -->
+      <div class="space-y-3" id="quest-list">
+        <!-- Quest 1 -->
+        <div id="quest-card-1" class="p-3 rounded-xl bg-slate-950 border border-slate-800 transition flex items-start gap-3">
+          <div id="quest-status-icon-1" class="mt-0.5 text-slate-600"><i class="ph-bold ph-circle text-lg"></i></div>
+          <div>
+            <div class="text-xs font-bold text-white flex items-center gap-2">
+              <span>Execute Heat Shock</span>
+              <span class="text-[9px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">Bench</span>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-0.5">Complete a 42°C thermal shock pulse (water bath or cycler).</p>
+          </div>
+        </div>
+        <!-- Quest 2 -->
+        <div id="quest-card-2" class="p-3 rounded-xl bg-slate-950 border border-slate-800 transition flex items-start gap-3">
+          <div id="quest-status-icon-2" class="mt-0.5 text-slate-600"><i class="ph-bold ph-circle text-lg"></i></div>
+          <div>
+            <div class="text-xs font-bold text-white flex items-center gap-2">
+              <span>Activate 470nm Blue Light</span>
+              <span class="text-[9px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">Winston</span>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-0.5">Excite fluorophores inside the Winston Reader chamber.</p>
+          </div>
+        </div>
+        <!-- Quest 3 -->
+        <div id="quest-card-3" class="p-3 rounded-xl bg-slate-950 border border-slate-800 transition flex items-start gap-3">
+          <div id="quest-status-icon-3" class="mt-0.5 text-slate-600"><i class="ph-bold ph-circle text-lg"></i></div>
+          <div>
+            <div class="text-xs font-bold text-white flex items-center gap-2">
+              <span>Induce GFP on Lane 3</span>
+              <span class="text-[9px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">gloTray</span>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-0.5">Pipette lactose/inducer solution onto colonies to turn them green.</p>
+          </div>
+        </div>
+        <!-- Quest 4 -->
+        <div id="quest-card-4" class="p-3 rounded-xl bg-slate-950 border border-slate-800 transition flex items-start gap-3">
+          <div id="quest-status-icon-4" class="mt-0.5 text-slate-600"><i class="ph-bold ph-circle text-lg"></i></div>
+          <div>
+            <div class="text-xs font-bold text-white flex items-center gap-2">
+              <span>Calculate Efficiency (TE)</span>
+              <span class="text-[9px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">Calculator</span>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-0.5">Compute CFU/µg in the AP Biology math workbench.</p>
+          </div>
+        </div>
+        <!-- Quest 5 -->
+        <div id="quest-card-5" class="p-3 rounded-xl bg-slate-950 border border-slate-800 transition flex items-start gap-3">
+          <div id="quest-status-icon-5" class="mt-0.5 text-slate-600"><i class="ph-bold ph-circle text-lg"></i></div>
+          <div>
+            <div class="text-xs font-bold text-white flex items-center gap-2">
+              <span>Pass AP Concept Review</span>
+              <span class="text-[9px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">Review</span>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-0.5">Evaluate an AP Biology Free-Response Question and view the rubric.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Achievement Level Footnote -->
+    <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs">
+      <div class="flex items-center justify-between text-slate-400 mb-1">
+        <span>Competence Rank:</span>
+        <span id="biotech-rank-text" class="text-emerald-400 font-bold">Novice Pipettor</span>
+      </div>
+      <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+        <div id="biotech-rank-bar" class="bg-gradient-to-r from-emerald-500 to-cyan-400 h-full w-0 transition-all duration-500"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- INTERACTIVE SPOTLIGHT GUIDED TOUR MODAL -->
+  <!-- ========================================================================= -->
+  <div id="tour-overlay" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden transition-opacity duration-300">
+    <div id="tour-card" class="bg-slate-900 border-2 border-emerald-500 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4 transition-all duration-300">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
+            <i id="tour-icon" class="ph-bold ph-compass text-lg"></i>
+          </div>
+          <div>
+            <span id="tour-step-badge" class="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-bold">Step 1 of 4</span>
+            <h3 id="tour-step-title" class="text-base font-bold text-white">Welcome to BioGlow Lab Suite</h3>
+          </div>
+        </div>
+        <div class="flex items-center gap-1">
+          <!-- Dock / Peek View Button -->
+          <button onclick="toggleTourDock(true)" class="text-slate-400 hover:text-emerald-400 p-1.5 rounded-lg hover:bg-slate-800 transition" title="Minimize / Peek at page">
+            <i class="ph-bold ph-arrows-in-simple text-base"></i>
+          </button>
+          <button onclick="endTour()" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition" title="Close Tour">
+            <i class="ph-bold ph-x text-base"></i>
+          </button>
+        </div>
+      </div>
+
+      <p id="tour-step-desc" class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+        This simulation mirrors Henrik's Lab Heat-Shock mechanics, Bozeman Science AP Bio Lab 6, and the MiniOne M6300 "Let It Glow" protocol. Follow the guided steps to explore bacterial transformation.
+      </p>
+
+      <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-start gap-3">
+        <i class="ph-fill ph-lightbulb text-amber-400 text-base mt-0.5 shrink-0"></i>
+        <div class="text-[11px] text-slate-400" id="tour-step-tip">
+          Click "Next Step" to cycle through each interactive workbench module.
+        </div>
+      </div>
+
+      <!-- Module Preview Action Bar -->
+      <div id="tour-preview-bar" class="p-3 rounded-xl bg-emerald-950/30 border border-emerald-900/60 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2 text-xs text-emerald-300">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="text-[11px]">Interactive Action:</span>
+        </div>
+        <button id="tour-preview-action-btn" onclick="previewCurrentStepModule()" class="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold text-white shadow flex items-center gap-1.5 transition">
+          <i class="ph-bold ph-play"></i>
+          <span id="tour-preview-action-label">Preview Module</span>
+        </button>
+      </div>
+
+      <!-- Action Button Prompt -->
+      <div class="flex items-center justify-between pt-2 border-t border-slate-800">
+        <button onclick="endTour()" class="px-3 py-1.5 text-xs text-slate-400 hover:text-white">Skip Tour</button>
+        <div class="flex items-center gap-2">
+          <button id="tour-prev-btn" onclick="prevTourStep()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed">Back</button>
+          <button id="tour-next-btn" onclick="nextTourStep()" class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold text-white shadow flex items-center gap-1">
+            <span id="tour-next-label">Next Step</span>
+            <i class="ph-bold ph-arrow-right text-xs"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLOATING MINIMIZED TOUR DOCK (BOTTOM RIGHT) -->
+  <div id="tour-minimized-dock" class="fixed bottom-5 right-5 z-50 hidden bg-slate-900/95 border-2 border-emerald-500 shadow-2xl rounded-2xl p-3 backdrop-blur-md flex items-center gap-3 transition-all duration-300">
+    <div class="flex items-center gap-2">
+      <div class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-mono font-bold text-xs border border-emerald-500/30">
+        <span id="dock-step-num">1</span>
+      </div>
+      <div class="hidden sm:block">
+        <div class="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">Tutorial Docked</div>
+        <div id="dock-step-title" class="text-xs font-semibold text-white max-w-[140px] truncate">Step 1</div>
+      </div>
+    </div>
+
+    <div class="h-6 w-px bg-slate-800 mx-1"></div>
+
+    <div class="flex items-center gap-1.5">
+      <button onclick="toggleTourDock(false)" class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow flex items-center gap-1 transition" title="Restore full tutorial view">
+        <i class="ph-bold ph-arrows-out-simple"></i>
+        <span>Expand</span>
+      </button>
+      <button onclick="nextTourStep()" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition" title="Advance to next tutorial step">
+        <i class="ph-bold ph-arrow-right"></i>
+      </button>
+      <button onclick="endTour()" class="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition" title="Close tutorial">
+        <i class="ph-bold ph-x text-sm"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MAIN WORKSPACE -->
+  <!-- ========================================================================= -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-6 space-y-6">
+
+    <!-- ======================================================================= -->
+    <!-- TAB 1: VIRTUAL BENCH & HEAT SHOCK -->
+    <!-- ======================================================================= -->
+    <div id="module-bench" class="space-y-6">
+      
+      <!-- Module Intro Bar -->
+      <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-emerald-950/30 p-4 rounded-2xl border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <span class="text-xs uppercase tracking-wider text-emerald-400 font-semibold">Stage 1: Genetic Transformation Protocol</span>
+          <h2 class="text-lg font-bold text-white">Heat-Shock Competence & Membrane Fluidity</h2>
+          <p class="text-xs text-slate-400 mt-0.5">Neutralize bacterial LPS and plasmid negative charges with ice-cold <span class="font-mono text-cyan-300">CaCl₂</span>, then pulse at 42°C to open transient membrane pores.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-400 font-medium">Protocol Mode:</span>
+          <select id="bench-method-select" onchange="setProtocolMode(this.value)" class="bg-slate-950 text-emerald-400 border border-slate-700 text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-emerald-500">
+            <option value="waterbath">Traditional Water Bath (42°C & Ice)</option>
+            <option value="minione">MiniOne PCR Thermal Cycler Linked</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Bench Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Left: Interactive Bench Rig & Stepper (5 cols) -->
+        <div class="lg:col-span-5 bg-slate-900/90 rounded-2xl border border-slate-800 p-5 flex flex-col justify-between space-y-4">
+          <div>
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div class="flex items-center gap-2">
+                <span id="step-badge" class="px-2.5 py-0.5 text-xs font-mono font-bold rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Step 1 / 5</span>
+                <span id="step-title" class="font-semibold text-white text-sm">Chemical Competence (CaCl₂)</span>
+              </div>
+              <button onclick="resetBenchWorkflow()" class="text-xs text-slate-400 hover:text-white flex items-center gap-1 transition">
+                <i class="ph-bold ph-arrows-counter-clockwise"></i> Reset
+              </button>
+            </div>
+
+            <!-- Description -->
+            <div class="mt-4 p-4 rounded-xl bg-slate-950/70 border border-slate-800 text-xs space-y-2 leading-relaxed text-slate-300">
+              <p id="step-detail-text">
+                Competent <span class="italic font-medium text-white">E. coli</span> are suspended in ice-cold calcium chloride (<span class="font-mono text-cyan-300">CaCl₂</span>). The divalent <span class="font-bold text-cyan-300">Ca²⁺ ions</span> shield negative charges on DNA phosphates and bacterial lipopolysaccharides (LPS).
+              </p>
+              <div id="step-sub-note" class="text-[11px] text-amber-300 bg-amber-950/30 p-2 rounded border border-amber-900/40 flex items-start gap-1.5">
+                <i class="ph-fill ph-info text-amber-400 mt-0.5"></i>
+                <span>Microtubes prepared: <strong>(+) DNA</strong> (contains pBioGlow plasmid) and <strong>(-) DNA</strong> (control tube with water).</span>
+              </div>
+            </div>
+
+            <!-- Dynamic Rig Display -->
+            <div class="mt-4 p-4 rounded-xl bg-slate-950 border border-slate-800 flex flex-col items-center">
+              <div class="text-[11px] font-mono text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>Chamber: <span id="rig-chamber-name" class="text-cyan-400 font-bold">Cold Chill Block (0°C)</span></span>
+              </div>
+
+              <!-- Thermal Rig Graphic -->
+              <div class="w-full h-32 relative bg-gradient-to-b from-slate-900 to-slate-950 rounded-xl border border-slate-800 flex items-center justify-around px-6 overflow-hidden">
+                <!-- Tube (-) DNA -->
+                <div class="flex flex-col items-center">
+                  <div class="text-[10px] font-mono text-slate-400 mb-1">(-) DNA</div>
+                  <div class="w-8 h-16 rounded-b-xl border-2 border-slate-500 bg-slate-800/80 relative flex items-end justify-center pb-1 shadow-inner">
+                    <div class="w-6 h-6 rounded-b-lg bg-sky-400/40"></div>
+                  </div>
+                  <span class="text-[9px] text-slate-500 mt-1">Control</span>
+                </div>
+
+                <!-- Center Temp & Time -->
+                <div class="flex flex-col items-center">
+                  <div id="rig-temp-display" class="text-3xl font-mono font-extrabold text-cyan-400 tracking-wider">0.0°C</div>
+                  <div id="rig-timer-display" class="text-xs font-mono text-slate-400 mt-1">Timer: <span id="rig-timer-val">00:00</span></div>
+                  <div id="rig-submode" class="text-[10px] text-slate-500 font-mono mt-0.5">Ice Incubation</div>
+                </div>
+
+                <!-- Tube (+) DNA -->
+                <div class="flex flex-col items-center">
+                  <div class="text-[10px] font-mono text-emerald-400 font-semibold mb-1">(+) DNA</div>
+                  <div class="w-8 h-16 rounded-b-xl border-2 border-emerald-500 bg-slate-800/80 relative flex items-end justify-center pb-1 shadow-inner ring-2 ring-emerald-500/20">
+                    <div class="w-6 h-6 rounded-b-lg bg-emerald-400/40"></div>
+                  </div>
+                  <span class="text-[9px] text-emerald-400 font-mono mt-1">+pBioGlow</span>
+                </div>
+              </div>
+
+              <!-- Action Controls -->
+              <div class="w-full mt-4 flex items-center gap-3">
+                <button id="bench-action-btn" onclick="executeBenchStepAction()" class="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium text-xs shadow-lg transition flex items-center justify-center gap-2">
+                  <i class="ph-bold ph-play"></i>
+                  <span id="bench-action-text">Add pBioGlow Plasmid & Mix</span>
+                </button>
+                <button id="bench-next-btn" disabled onclick="advanceBenchStep()" class="py-2.5 px-4 rounded-xl bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition flex items-center gap-1.5">
+                  <span>Next Step</span>
+                  <i class="ph-bold ph-arrow-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stepper Dots -->
+          <div class="flex items-center justify-between pt-2 border-t border-slate-800 text-xs">
+            <span class="text-slate-400 text-[11px]">Workflow Stages:</span>
+            <div class="flex items-center space-x-2">
+              <span class="bench-dot w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-400/30" title="CaCl2 Addition"></span>
+              <span class="bench-dot w-2.5 h-2.5 rounded-full bg-slate-700" title="Ice Chill"></span>
+              <span class="bench-dot w-2.5 h-2.5 rounded-full bg-slate-700" title="42°C Heat-Shock"></span>
+              <span class="bench-dot w-2.5 h-2.5 rounded-full bg-slate-700" title="Recovery Outgrowth"></span>
+              <span class="bench-dot w-2.5 h-2.5 rounded-full bg-slate-700" title="Plating gloTray"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Interactive Nanoscale Membrane Canvas (7 cols) -->
+        <div class="lg:col-span-7 bg-slate-900/90 rounded-2xl border border-slate-800 p-5 flex flex-col justify-between space-y-4">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <i class="ph-fill ph-magnifying-glass-plus text-emerald-400 text-lg"></i>
+                <h3 class="text-sm font-semibold text-white">Nanoscale Membrane & Electrostatic Physics</h3>
+              </div>
+              <span id="canvas-status-tag" class="text-[11px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800">Electrostatic Shielding Active</span>
+            </div>
+
+            <!-- Canvas Container -->
+            <div class="relative w-full h-80 bg-slate-950 rounded-xl border border-slate-800 overflow-hidden shadow-inner flex flex-col">
+              <canvas id="molecularCanvas" class="w-full h-full block cursor-crosshair"></canvas>
+              <!-- Legend overlay -->
+              <div class="absolute bottom-2 left-2 right-2 bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-800 flex flex-wrap items-center justify-between text-[10px] text-slate-300 gap-2">
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block shadow"></span> Ca²⁺ Divalent Cations</span>
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span> pBioGlow Plasmid</span>
+                <span class="flex items-center gap-1.5"><span class="w-3 h-2 rounded bg-amber-600 inline-block"></span> Outer Membrane (LPS)</span>
+                <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-rose-400 inline-block animate-pulse"></span> Heat Shock Pore</span>
+              </div>
+            </div>
+
+            <p class="text-xs text-slate-400 mt-3 leading-relaxed">
+              <strong>Bozeman & Henrik's Lab Principle:</strong> Bacterial cells and plasmid DNA both carry high negative surface charges. Divalent <span class="text-cyan-300 font-mono">Ca²⁺</span> creates electrostatic salt bridges that allow DNA to adhere to the membrane. A thermal surge to <span class="text-rose-400 font-semibold">42°C</span> creates transient thermal convection pores, drawing plasmids inward.
+            </p>
+          </div>
+
+          <!-- Plating prompt for Step 5 -->
+          <div id="plating-prompt-box" class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 hidden flex items-center justify-between">
+            <div class="text-xs text-slate-300">
+              <span class="font-bold text-white block">Recovery Complete!</span>
+              Ready to transfer colonies to the MiniOne gloTray™ reader plate.
+            </div>
+            <button onclick="switchTab('winston')" class="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs shadow flex items-center gap-1.5 transition">
+              <span>Inspect Winston Reader</span>
+              <i class="ph-bold ph-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ======================================================================= -->
+    <!-- TAB 2: WINSTON FLUORESCENCE READER & OPERON INDUCTION -->
+    <!-- ======================================================================= -->
+    <div id="module-winston" class="space-y-6 hidden">
+      
+      <!-- Module Header & Lighting Toolbar -->
+      <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-cyan-950/30 p-4 rounded-2xl border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <span class="text-xs uppercase tracking-wider text-cyan-400 font-semibold">Stage 2: MiniOne gloTray™ Diagnostic Reader</span>
+          <h2 class="text-lg font-bold text-white">Winston Reader™ & Operon Induction</h2>
+          <p class="text-xs text-slate-400 mt-0.5">Toggle White Light vs 470nm Blue Light, adjust the 580nm Amber Filter, and pipette inducer onto Lane 3 colonies.</p>
+        </div>
+        
+        <!-- Controls -->
+        <div class="flex flex-wrap items-center gap-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
+          <button id="light-white-btn" onclick="setWinstonIllumination('white')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-white shadow transition flex items-center gap-1.5">
+            <i class="ph-bold ph-sun"></i> White Light
+          </button>
+          <button id="light-blue-btn" onclick="setWinstonIllumination('blue')" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition flex items-center gap-1.5">
+            <i class="ph-bold ph-lightning text-cyan-400"></i> 470 nm Blue Light
+          </button>
+          <div class="w-px h-5 bg-slate-800 mx-1"></div>
+          <div class="flex items-center gap-2 px-1 text-xs text-slate-300">
+            <label for="amber-filter-range" class="text-[11px] text-amber-400 font-medium">Amber Hood:</label>
+            <input type="range" id="amber-filter-range" min="0" max="100" value="85" oninput="updateAmberFilter(this.value)" class="w-20 accent-amber-500 cursor-pointer">
+            <span id="amber-pct-label" class="font-mono text-[10px] text-slate-400">85%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Winston Rig & Operon Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- GloTray Chamber (6 cols) -->
+        <div class="lg:col-span-6 bg-slate-900/90 rounded-2xl border border-slate-800 p-5 flex flex-col justify-between space-y-4">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <i class="ph-fill ph-device-tablet-speaker text-cyan-400 text-lg"></i>
+                <h3 class="text-sm font-semibold text-white">MiniOne gloTray™ 4-Lane Chamber</h3>
+              </div>
+              <span id="chamber-light-tag" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">Mode: Broad White Light</span>
+            </div>
+
+            <!-- Canvas Chamber -->
+            <div id="chamber-box" class="w-full h-80 bg-slate-950 rounded-2xl border-4 border-slate-800 relative overflow-hidden flex flex-col justify-between p-3 transition-all duration-500">
+              <canvas id="gloTrayCanvas" class="w-full h-full rounded-xl"></canvas>
+            </div>
+
+            <!-- 4 Lanes Details Breakdown -->
+            <div class="grid grid-cols-4 gap-2 mt-4 text-[11px] text-center">
+              <div class="p-2 rounded-lg bg-slate-950 border border-slate-800/80">
+                <span class="text-slate-400 block font-bold font-mono">Lane 1</span>
+                <span class="text-[10px] text-slate-300">Confluent Lawn</span>
+                <span class="block text-[9px] text-slate-500 mt-0.5">(-) DNA / LB</span>
+              </div>
+              <div class="p-2 rounded-lg bg-slate-950 border border-slate-800/80">
+                <span class="text-slate-400 block font-bold font-mono">Lane 2</span>
+                <span class="text-[10px] text-rose-400 font-semibold">0 Colonies</span>
+                <span class="block text-[9px] text-slate-500 mt-0.5">(-) DNA / LB+Amp</span>
+              </div>
+              <div class="p-2 rounded-lg bg-slate-950 border border-slate-800/80">
+                <span class="text-slate-400 block font-bold font-mono">Lane 3</span>
+                <span id="lane3-legend-status" class="text-[10px] text-amber-300 font-semibold">~65 White Col.</span>
+                <span class="block text-[9px] text-slate-500 mt-0.5">(+) DNA / LB+Amp</span>
+              </div>
+              <div class="p-2 rounded-lg bg-slate-950 border border-slate-800/80">
+                <span class="text-slate-400 block font-bold font-mono">Lane 4</span>
+                <span class="text-[10px] text-emerald-400 font-bold">~68 Fluorescent★</span>
+                <span class="block text-[9px] text-slate-500 mt-0.5">LB+Amp+Inducer</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Interactive Chemical Induction Tool -->
+          <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="space-y-0.5">
+              <h4 class="text-xs font-semibold text-white flex items-center gap-1.5">
+                <i class="ph-bold ph-drop text-amber-400"></i>
+                <span>Post-Transformation Induction Test</span>
+              </h4>
+              <p class="text-[11px] text-slate-400">Pipette 15 µL Lactose/IPTG onto Lane 3 white colonies.</p>
+            </div>
+            <button id="pipette-inducer-btn" onclick="pipetteInducerOnLane3()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-slate-950 font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5 shrink-0">
+              <i class="ph-bold ph-pipette"></i>
+              <span id="pipette-btn-label">Pipette Inducer</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Lac / Ara Operon Transcriptional Schematic (6 cols) -->
+        <div class="lg:col-span-6 bg-slate-900/90 rounded-2xl border border-slate-800 p-5 flex flex-col justify-between space-y-4">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-2">
+                <i class="ph-fill ph-git-branch text-emerald-400"></i>
+                <h3 class="text-sm font-semibold text-white">Transcriptional Operon Regulation</h3>
+              </div>
+              <span id="operon-state-tag" class="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800">State: Repressed (OFF)</span>
+            </div>
+            <p class="text-xs text-slate-400 mb-3 leading-relaxed">
+              In pBioGlow / pGLO vectors, transcription of the <strong>eGFP</strong> gene is under an inducible operon. When the repressor protein is bound to the operator, RNA Polymerase is physically blocked.
+            </p>
+
+            <!-- Interactive Operon SVG Diagram -->
+            <div class="w-full bg-slate-950 p-4 rounded-xl border border-slate-800 relative flex flex-col items-center">
+              <svg id="operon-svg" viewBox="0 0 520 220" class="w-full h-auto max-w-full">
+                <!-- Plasmid DNA Backbone -->
+                <rect x="20" y="110" width="480" height="12" rx="6" fill="#334155" />
+
+                <!-- lacI / Repressor gene -->
+                <rect x="30" y="98" width="85" height="36" rx="6" fill="#64748b" opacity="0.9" />
+                <text x="72" y="121" fill="#f8fafc" font-size="11" font-family="monospace" text-anchor="middle" font-weight="bold">lacI / rep</text>
+
+                <!-- Promoter (P) -->
+                <rect x="135" y="98" width="60" height="36" rx="6" fill="#0284c7" />
+                <text x="165" y="121" fill="#ffffff" font-size="11" font-family="monospace" text-anchor="middle" font-weight="bold">Promoter</text>
+
+                <!-- Operator (O) -->
+                <rect x="210" y="98" width="60" height="36" rx="6" fill="#ea580c" />
+                <text x="240" y="121" fill="#ffffff" font-size="11" font-family="monospace" text-anchor="middle" font-weight="bold">Operator</text>
+
+                <!-- Structural Gene: GFP -->
+                <rect id="operon-gfp-rect" x="285" y="94" width="130" height="44" rx="8" fill="#15803d" stroke="#22c55e" stroke-width="2" class="transition-all duration-500" />
+                <text x="350" y="121" fill="#ffffff" font-size="12" font-family="monospace" text-anchor="middle" font-weight="bold">eGFP Gene</text>
+
+                <!-- Resistance Gene: bla / ampR -->
+                <rect x="425" y="98" width="75" height="36" rx="6" fill="#7e22ce" />
+                <text x="462" y="121" fill="#f5d0fe" font-size="10" font-family="monospace" text-anchor="middle" font-weight="bold">bla (Ampʳ)</text>
+
+                <!-- Repressor Protein Molecule -->
+                <g id="repressor-group" class="transition-all duration-700 transform" transform="translate(240, 75)">
+                  <circle cx="0" cy="0" r="16" fill="#dc2626" stroke="#fca5a5" stroke-width="2" />
+                  <text x="0" y="4" fill="#ffffff" font-size="9" text-anchor="middle" font-weight="bold">Repressor</text>
+                </g>
+
+                <!-- Inducer Molecule (Lactose/IPTG) -->
+                <g id="inducer-group" class="transition-all duration-700 transform opacity-0" transform="translate(240, 20)">
+                  <polygon points="0,-10 9,5 -9,5" fill="#facc15" stroke="#ca8a04" stroke-width="2" />
+                  <text x="0" y="-12" fill="#facc15" font-size="8" text-anchor="middle">Inducer</text>
+                </g>
+
+                <!-- RNA Polymerase -->
+                <g id="rna-poly-group" class="transition-all duration-700 transform" transform="translate(165, 55)">
+                  <ellipse cx="0" cy="0" rx="22" ry="15" fill="#38bdf8" opacity="0.85" />
+                  <text x="0" y="3" fill="#082f49" font-size="9" font-weight="bold" text-anchor="middle">RNA Pol</text>
+                </g>
+
+                <!-- Transcribed mRNA & GFP -->
+                <g id="transcript-output" class="opacity-0 transition-opacity duration-700">
+                  <path d="M 300 155 Q 350 175 400 155" fill="none" stroke="#4ade80" stroke-width="3" stroke-dasharray="4 2" />
+                  <text x="350" y="172" fill="#86efac" font-size="9" text-anchor="middle">mRNA Transcript</text>
+                  <circle cx="350" cy="195" r="14" fill="#22c55e" filter="drop-shadow(0 0 10px #4ade80)" />
+                  <text x="350" y="198" fill="#052e16" font-size="9" font-weight="bold" text-anchor="middle">GFP★</text>
+                </g>
+              </svg>
+
+              <!-- Narration -->
+              <div id="operon-narrative" class="text-xs text-slate-300 text-center mt-2 px-2">
+                Active repressor is bound directly to the operator. RNA Polymerase is physically blocked from transcribing eGFP.
+              </div>
+            </div>
+
+            <!-- Inducer Toggle Buttons -->
+            <div class="flex items-center gap-2 mt-3">
+              <button onclick="toggleOperonInducer(true)" class="flex-1 py-2 px-3 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold transition flex items-center justify-center gap-1">
+                <i class="ph-bold ph-plus-circle"></i> Add Inducer (Turn ON)
+              </button>
+              <button onclick="toggleOperonInducer(false)" class="flex-1 py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition flex items-center justify-center gap-1">
+                <i class="ph-bold ph-minus-circle"></i> Wash Inducer (Turn OFF)
+              </button>
+            </div>
+          </div>
+
+          <!-- Conceptual Synthesis -->
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1">
+            <span class="text-slate-200 font-semibold block">Key AP Biology Distinction:</span>
+            <p><strong>Constitutive vs. Inducible:</strong> The <span class="font-mono text-purple-300">bla</span> gene confers ampicillin resistance constitutively (always active). The <span class="font-mono text-emerald-300">gfp</span> gene is inducible, producing fluorescence only when an allosteric effector binds the repressor.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ======================================================================= -->
+    <!-- TAB 3: TRANSFORMATION EFFICIENCY (TE) CALCULATOR -->
+    <!-- ======================================================================= -->
+    <div id="module-calculator" class="space-y-6 hidden">
+      
+      <!-- Intro Bar -->
+      <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-indigo-950/30 p-4 rounded-2xl border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <span class="text-xs uppercase tracking-wider text-indigo-400 font-semibold">Quantitative AP Biology Workbench</span>
+          <h2 class="text-lg font-bold text-white">Transformation Efficiency (TE) Math Engine</h2>
+          <p class="text-xs text-slate-400 mt-0.5">Calculate colony forming units per microgram of DNA (<span class="font-mono text-emerald-300">CFU / µg</span>) with full step-by-step mathematical derivations.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="loadSampleTEData('minione')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 border border-slate-700 transition">
+            Load MiniOne Dataset
+          </button>
+          <button onclick="loadSampleTEData('apbio')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 border border-slate-700 transition">
+            Load AP Bio Lab 6 Dataset
+          </button>
+        </div>
+      </div>
+
+      <!-- Calculator Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Input Parameters (6 cols) -->
+        <div class="lg:col-span-6 bg-slate-900/90 rounded-2xl border border-slate-800 p-5 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+              <i class="ph-bold ph-sliders-horizontal text-emerald-400"></i>
+              <span>Laboratory Variables</span>
+            </h3>
+            <span class="text-[10px] font-mono text-slate-400">Formula: TE = CFU ÷ Mass of DNA Plated (µg)</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div>
+              <label class="block text-slate-400 mb-1">Plasmid Conc. (<span class="font-mono text-cyan-300">µg/µL</span>):</label>
+              <input type="number" id="calc-conc" value="0.08" step="0.01" min="0.001" oninput="runTECalculation()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white font-mono focus:border-emerald-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">Plasmid Volume Added (<span class="font-mono text-cyan-300">µL</span>):</label>
+              <input type="number" id="calc-vol-plasmid" value="10" step="1" min="1" oninput="runTECalculation()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white font-mono focus:border-emerald-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">Total Suspension Volume (<span class="font-mono text-cyan-300">µL</span>):</label>
+              <input type="number" id="calc-vol-total" value="500" step="10" min="50" oninput="runTECalculation()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white font-mono focus:border-emerald-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">Volume Spread on Plate (<span class="font-mono text-cyan-300">µL</span>):</label>
+              <input type="number" id="calc-vol-plated" value="100" step="10" min="10" oninput="runTECalculation()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white font-mono focus:border-emerald-500 focus:outline-none">
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-slate-400 mb-1">Counted Colonies (<span class="font-mono text-emerald-400 font-bold">CFU</span>):</label>
+              <input type="number" id="calc-colonies" value="68" step="1" min="0" oninput="runTECalculation()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-emerald-400 font-bold font-mono focus:border-emerald-500 focus:outline-none">
+            </div>
+          </div>
+
+          <!-- Step-by-Step Derivation Breakdown -->
+          <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2 text-xs font-mono">
+            <div class="flex justify-between text-slate-400">
+              <span>Step 1: Total Plasmid Mass Added:</span>
+              <span id="breakdown-mass-added" class="text-cyan-400 font-bold">0.80 µg</span>
+            </div>
+            <div class="flex justify-between text-slate-400">
+              <span>Step 2: Fraction of Cell Suspension Plated:</span>
+              <span id="breakdown-fraction-plated" class="text-cyan-400 font-bold">0.20 (20%)</span>
+            </div>
+            <div class="flex justify-between text-slate-400">
+              <span>Step 3: Actual Mass Spread on Agar:</span>
+              <span id="breakdown-mass-spread" class="text-cyan-400 font-bold">0.160 µg</span>
+            </div>
+            <div class="border-t border-slate-800 pt-2 flex justify-between items-center text-sm">
+              <span class="text-white font-sans font-bold">Transformation Efficiency:</span>
+              <span id="breakdown-result-te" class="text-emerald-400 font-extrabold text-base">4.25 × 10² CFU/µg</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Practice Scenarios & Interpretation (6 cols) -->
+        <div class="lg:col-span-6 bg-slate-900/90 rounded-2xl border border-slate-800 p-5 space-y-4 flex flex-col justify-between">
+          <div>
+            <h3 class="text-sm font-semibold text-white mb-2 flex items-center gap-2">
+              <i class="ph-bold ph-chart-bar text-cyan-400"></i>
+              <span>Bench Competence Thresholds</span>
+            </h3>
+            <p class="text-xs text-slate-400 mb-3">
+              How does your computed efficiency rate against professional molecular biology standards?
+            </p>
+
+            <!-- Rating Gauge -->
+            <div class="space-y-2 text-xs">
+              <div class="p-2.5 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-between">
+                <div>
+                  <div class="font-bold text-slate-300">Standard Classroom Lab (10² - 10⁴ CFU/µg)</div>
+                  <div class="text-[11px] text-slate-500">Typical AP Biology / MiniOne classroom result with manual heat shock.</div>
+                </div>
+                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">Target Range</span>
+              </div>
+              <div class="p-2.5 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-between">
+                <div>
+                  <div class="font-bold text-slate-300">Commercial Chemically Competent (10⁶ - 10⁸ CFU/µg)</div>
+                  <div class="text-[11px] text-slate-500">High-efficiency commercial cloning strains (e.g. DH5α, TOP10).</div>
+                </div>
+                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">Research Grade</span>
+              </div>
+              <div class="p-2.5 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-between">
+                <div>
+                  <div class="font-bold text-slate-300">Electrocompetent Cells (10⁹ - 10¹⁰ CFU/µg)</div>
+                  <div class="text-[11px] text-slate-500">Prepared for electroporation with high-voltage cuvettes.</div>
+                </div>
+                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">Electroporation</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- AP Exam Math Question -->
+          <div class="p-4 rounded-xl bg-indigo-950/20 border border-indigo-900/40 text-xs text-indigo-200 space-y-1">
+            <span class="font-bold text-indigo-300 block">AP Biology Exam Strategy:</span>
+            <p>Always show: (1) Total plasmid mass added, (2) Fraction of total volume spread on the plate, (3) Mass of plasmid on plate, and (4) Colonies divided by mass in scientific notation with units <span class="font-mono">CFU/µg</span>.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ======================================================================= -->
+    <!-- TAB 4: AP BIO REVIEW & PROTOCOLS -->
+    <!-- ======================================================================= -->
+    <div id="module-review" class="space-y-6 hidden">
+      
+      <!-- Intro Bar -->
+      <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-amber-950/30 p-4 rounded-2xl border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <span class="text-xs uppercase tracking-wider text-amber-400 font-semibold">AP Biology Curriculum Review</span>
+          <h2 class="text-lg font-bold text-white">Free-Response Practice & Lab References</h2>
+          <p class="text-xs text-slate-400 mt-0.5">Practice College Board-style FRQ prompts with official scoring rubrics and curated video timestamps.</p>
+        </div>
+      </div>
+
+      <!-- FRQ Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- FRQ Interactive Engine (7 cols) -->
+        <div class="lg:col-span-7 bg-slate-900/90 rounded-2xl border border-slate-800 p-5 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <div class="flex items-center gap-2">
+              <i class="ph-fill ph-exam text-amber-400 text-lg"></i>
+              <h3 class="text-sm font-semibold text-white">AP Free-Response Questions</h3>
+            </div>
+            <div class="flex items-center gap-1">
+              <button onclick="selectFRQPrompt(0)" id="frq-btn-0" class="px-2.5 py-0.5 text-xs font-mono rounded bg-emerald-600 text-white font-semibold">Q1</button>
+              <button onclick="selectFRQPrompt(1)" id="frq-btn-1" class="px-2.5 py-0.5 text-xs font-mono rounded bg-slate-800 text-slate-400 font-semibold">Q2</button>
+              <button onclick="selectFRQPrompt(2)" id="frq-btn-2" class="px-2.5 py-0.5 text-xs font-mono rounded bg-slate-800 text-slate-400 font-semibold">Q3</button>
+            </div>
+          </div>
+
+          <!-- Prompt Box -->
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs space-y-2">
+            <div id="frq-display-title" class="font-bold text-emerald-400 text-sm">Question 1: Experimental Controls & Selection</div>
+            <p id="frq-display-prompt" class="text-slate-300 leading-relaxed">
+              Explain the experimental purpose of Lane 2 ([-] DNA on LB + Ampicillin agar) versus Lane 1 ([-] DNA on LB plain agar). What specific conclusion must the researcher make if colonies grow on Lane 2?
+            </p>
+          </div>
+
+          <!-- Input Area -->
+          <div class="space-y-2">
+            <label class="block text-xs font-medium text-slate-300">Your Scientific Explanation:</label>
+            <textarea id="frq-answer-textarea" rows="4" placeholder="State your claim, evidence, and physiological reasoning..." class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none leading-relaxed"></textarea>
+            
+            <div class="flex items-center justify-between">
+              <button onclick="evaluateFRQResponse()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow transition flex items-center gap-1.5">
+                <i class="ph-bold ph-seal-check"></i> Evaluate & View Official Scoring Rubric
+              </button>
+              <button onclick="toggleFRQHintText()" class="text-xs text-amber-400 hover:text-amber-300 flex items-center gap-1">
+                <i class="ph-bold ph-lightbulb"></i> <span id="frq-hint-label">Show Hint</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Hint -->
+          <div id="frq-hint-panel" class="hidden p-3 rounded-lg bg-amber-950/40 border border-amber-800/60 text-xs text-amber-200">
+            <span class="font-bold">Hint:</span> Differentiate between viability controls and negative death controls. What does it mean if untransformed cells survive in ampicillin?
+          </div>
+
+          <!-- Rubric Output -->
+          <div id="frq-rubric-panel" class="hidden p-4 rounded-xl bg-slate-950 border border-emerald-900/60 text-xs space-y-2">
+            <div class="text-emerald-400 font-bold flex items-center gap-1.5">
+              <i class="ph-fill ph-check-circle"></i> Official AP Model Scoring Rubric:
+            </div>
+            <ul id="frq-rubric-list" class="list-disc pl-4 space-y-1 text-slate-300 leading-relaxed">
+              <!-- Points injected by JS -->
+            </ul>
+          </div>
+        </div>
+
+        <!-- Video Cross References & Manuals (5 cols) -->
+        <div class="lg:col-span-5 bg-slate-900/90 rounded-2xl border border-slate-800 p-5 space-y-4">
+          <div class="border-b border-slate-800 pb-2">
+            <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+              <i class="ph-bold ph-video text-rose-500"></i>
+              <span>Curated Video Protocol Guides</span>
+            </h3>
+          </div>
+
+          <div class="space-y-3 text-xs">
+            <!-- Henrik's Lab -->
+            <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-white">Henrik's Lab: Heat-Shock Protocol</span>
+                <span class="font-mono text-[10px] text-cyan-400 bg-cyan-950 px-1.5 py-0.5 rounded">00:00 - 03:45</span>
+              </div>
+              <p class="text-slate-400 text-[11px]">Covers calcium chloride charge shielding on phosphate backbones and 42°C transient porin channel thermodynamics.</p>
+            </div>
+
+            <!-- Bozeman Science -->
+            <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-white">Bozeman AP Bio: Transformation Lab 6</span>
+                <span class="font-mono text-[10px] text-cyan-400 bg-cyan-950 px-1.5 py-0.5 rounded">00:40 - 05:20</span>
+              </div>
+              <p class="text-slate-400 text-[11px]">Features pGLO plasmid anatomy, LB/Amp/Ara plate controls, and transformation efficiency mathematical derivation.</p>
+            </div>
+
+            <!-- MiniOne Let It Glow -->
+            <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-white">MiniOne M6300 Let It Glow MiniLab</span>
+                <span class="font-mono text-[10px] text-cyan-400 bg-cyan-950 px-1.5 py-0.5 rounded">Student Guide</span>
+              </div>
+              <p class="text-slate-400 text-[11px]">Protocol for Winston Reader 470 nm illumination, 4-lane gloTray, and post-transformation lactose induction pipetting.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- FOOTER -->
+  <!-- ========================================================================= -->
+  <footer class="bg-slate-900/80 border-t border-slate-800 px-4 py-3 text-xs text-slate-500 flex flex-wrap items-center justify-between gap-2">
+    <div>BioGlow Lab Suite • Bacterial Transformation Simulation</div>
+    <div class="flex items-center gap-2 font-mono text-[11px] text-slate-400">
+      <span>Winston Reader & gloTray™ Ready</span>
+      <span>•</span>
+      <span class="text-emerald-400 font-semibold">Active</span>
+    </div>
+  </footer>
+
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT ENGINE -->
+  <!-- ========================================================================= -->
+  <script>
+    /* ---------------------------------------------------------
+       1. GLOBAL STATE & WEB AUDIO SYNTHESIZER
+       --------------------------------------------------------- */
+    const labState = {
+      activeTab: 'bench',
+      audioEnabled: true,
+      protocolMode: 'waterbath', // 'waterbath' or 'minione'
+      benchStep: 1,
+      benchTimerInterval: null,
+      // Winston Reader
+      winstonLight: 'white',
+      amberFilterOpacity: 0.85,
+      lane3Induced: false,
+      operonInducer: false,
+      // Quests State
+      quests: {
+        heatShock: false,
+        blueLight: false,
+        induceGFP: false,
+        calcTE: false,
+        conceptReview: false
+      },
+      // Guided Tour
+      tourStep: 0,
+      currentFRQ: 0
+    };
+
+    // Native Web Audio API Synthesizer (No external sound dependencies)
+    let audioCtx = null;
+    function getAudioContext() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) {
+          audioCtx = new AudioContextClass();
+        }
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function playLabBeep(freq = 600, duration = 0.08, type = 'sine') {
+      if (!labState.audioEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function playSuccessChime() {
+      if (!labState.audioEnabled) return;
+      [523.25, 659.25, 783.99, 1046.50].forEach((f, idx) => {
+        setTimeout(() => playLabBeep(f, 0.14, 'triangle'), idx * 80);
+      });
+    }
+
+    function toggleAudio() {
+      labState.audioEnabled = !labState.audioEnabled;
+      const icon = document.getElementById('audio-icon');
+      if (labState.audioEnabled) {
+        icon.className = 'ph-bold ph-speaker-high text-emerald-400';
+        playLabBeep(880, 0.05);
+      } else {
+        icon.className = 'ph-bold ph-speaker-slash text-slate-500';
+      }
+    }
+
+    /* ---------------------------------------------------------
+       2. TAB NAVIGATION
+       --------------------------------------------------------- */
+    function switchTab(tabId) {
+      labState.activeTab = tabId;
+      playLabBeep(700, 0.04);
+
+      ['bench', 'winston', 'calculator', 'review'].forEach(id => {
+        const mod = document.getElementById(`module-${id}`);
+        const btn = document.getElementById(`tab-btn-${id}`);
+        if (mod) mod.classList.add('hidden');
+        if (btn) {
+          btn.className = 'tab-btn px-3 py-1.5 rounded-lg flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-900 transition';
+        }
+      });
+
+      const activeMod = document.getElementById(`module-${tabId}`);
+      const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+      if (activeMod) activeMod.classList.remove('hidden');
+      if (activeBtn) {
+        activeBtn.className = 'tab-btn px-3 py-1.5 rounded-lg flex items-center gap-2 bg-emerald-600 text-white shadow transition';
+      }
+
+      if (tabId === 'winston') {
+        renderGloTray();
+      }
+    }
+
+    /* ---------------------------------------------------------
+       3. "NOVICE TO BIOTECH PRO" QUEST ENGINE
+       --------------------------------------------------------- */
+    function toggleQuestDrawer() {
+      const drawer = document.getElementById('quest-drawer');
+      const overlay = document.getElementById('quest-drawer-overlay');
+      const isOpen = !drawer.classList.contains('translate-x-full');
+
+      if (isOpen) {
+        drawer.classList.add('translate-x-full');
+        overlay.classList.add('hidden');
+      } else {
+        drawer.classList.remove('translate-x-full');
+        overlay.classList.remove('hidden');
+        playLabBeep(650, 0.05);
+      }
+    }
+
+    function completeQuest(key, questNumber) {
+      if (labState.quests[key]) return; // already done
+      labState.quests[key] = true;
+      playSuccessChime();
+
+      // UI update
+      const icon = document.getElementById(`quest-status-icon-${questNumber}`);
+      const card = document.getElementById(`quest-card-${questNumber}`);
+      if (icon) {
+        icon.innerHTML = '<i class="ph-fill ph-check-circle text-emerald-400 text-lg"></i>';
+      }
+      if (card) {
+        card.classList.add('border-emerald-600/60', 'bg-emerald-950/20');
+      }
+
+      // Count completed
+      const completedCount = Object.values(labState.quests).filter(Boolean).length;
+      document.getElementById('quest-badge-counter').textContent = `${completedCount}/5`;
+
+      // Update Rank
+      const ranks = [
+        "Novice Pipettor",
+        "Competent Cell Prep",
+        "Thermal Shock Specialist",
+        "Operon Regulator",
+        "Quantitative Geneticist",
+        "Biotech Pro Master"
+      ];
+      document.getElementById('biotech-rank-text').textContent = ranks[completedCount];
+      document.getElementById('biotech-rank-bar').style.width = `${(completedCount / 5) * 100}%`;
+    }
+
+    /* ---------------------------------------------------------
+       4. GUIDED TOUR WALKTHROUGH ENGINE
+       --------------------------------------------------------- */
+    const tourContent = [
+      {
+        step: 1,
+        title: "Virtual Bench & Heat Shock",
+        tab: "bench",
+        icon: "ph-bold ph-thermometer-hot",
+        desc: "Begin at the Virtual Bench. The protocol treats E. coli with ice-cold CaCl2 to shield surface charges before delivering a 42°C thermal pulse that opens transient membrane pores for plasmid entry.",
+        tip: "Try switching between the traditional 42°C water bath and the MiniOne Thermal Cycler modes.",
+        previewLabel: "Inspect Heat Shock & Bench"
+      },
+      {
+        step: 2,
+        title: "Nanoscale Membrane Physics",
+        tab: "bench",
+        icon: "ph-bold ph-atom",
+        desc: "Watch the animated canvas on the right. Notice how divalent Ca²⁺ cations neutralize electrostatic repulsion between the negative plasmid backbones and the bacterial lipopolysaccharide (LPS) membrane.",
+        tip: "During the 42°C heat shock step, transient porin channels open to sweep plasmids inward.",
+        previewLabel: "View Nanoscale Membrane"
+      },
+      {
+        step: 3,
+        title: "Winston Reader & Operon Induction",
+        tab: "winston",
+        icon: "ph-bold ph-sun",
+        desc: "In the Winston Reader chamber, inspect the 4 gloTray lanes. Toggle between White Light and 470 nm Blue Light with the Amber filter, and pipette inducer onto Lane 3 to induce green fluorescence.",
+        tip: "Observe how the repressor protein dislodges from the operator to let RNA Polymerase transcribe eGFP.",
+        previewLabel: "Preview Winston Reader Module"
+      },
+      {
+        step: 4,
+        title: "TE Calculator & AP Review",
+        tab: "calculator",
+        icon: "ph-bold ph-calculator",
+        desc: "The final modules test quantitative proficiency: calculate Transformation Efficiency (CFU/µg) with full mathematical derivations and practice College Board AP Biology Free-Response Questions.",
+        tip: "Standard classroom labs produce efficiencies between 10² and 10⁴ CFU/µg.",
+        previewLabel: "Explore TE Calculator"
+      }
+    ];
+
+    let tourIsDocked = false;
+
+    function startTour() {
+      labState.tourStep = 0;
+      tourIsDocked = false;
+      document.getElementById('tour-minimized-dock').classList.add('hidden');
+      document.getElementById('tour-overlay').classList.remove('hidden');
+      playLabBeep(800, 0.05);
+      renderTourStep();
+    }
+
+    function toggleTourDock(shouldDock) {
+      tourIsDocked = shouldDock;
+      playLabBeep(shouldDock ? 500 : 700, 0.04);
+      const overlay = document.getElementById('tour-overlay');
+      const dock = document.getElementById('tour-minimized-dock');
+
+      if (shouldDock) {
+        // Hide main modal and remove the dark backdrop completely
+        overlay.classList.add('hidden');
+        dock.classList.remove('hidden');
+      } else {
+        // Expand back to full dialog
+        dock.classList.add('hidden');
+        overlay.classList.remove('hidden');
+      }
+    }
+
+    function previewCurrentStepModule() {
+      const s = tourContent[labState.tourStep];
+      switchTab(s.tab);
+      // Auto-dock to reveal the active screen without obstruction
+      toggleTourDock(true);
+    }
+
+    function renderTourStep() {
+      const s = tourContent[labState.tourStep];
+      switchTab(s.tab);
+
+      // Modal Dialog info
+      document.getElementById('tour-step-badge').textContent = `Step ${s.step} of 4`;
+      document.getElementById('tour-step-title').textContent = s.title;
+      document.getElementById('tour-icon').className = s.icon;
+      document.getElementById('tour-step-desc').textContent = s.desc;
+      document.getElementById('tour-step-tip').textContent = s.tip;
+      document.getElementById('tour-preview-action-label').textContent = s.previewLabel || "Preview Module";
+
+      document.getElementById('tour-prev-btn').disabled = labState.tourStep === 0;
+      document.getElementById('tour-next-label').textContent = labState.tourStep === tourContent.length - 1 ? "Finish Tour" : "Next Step";
+
+      // Floating Dock info
+      document.getElementById('dock-step-num').textContent = s.step;
+      document.getElementById('dock-step-title').textContent = s.title;
+    }
+
+    function nextTourStep() {
+      if (labState.tourStep < tourContent.length - 1) {
+        labState.tourStep++;
+        playLabBeep(650, 0.04);
+        renderTourStep();
+      } else {
+        endTour();
+      }
+    }
+
+    function prevTourStep() {
+      if (labState.tourStep > 0) {
+        labState.tourStep--;
+        playLabBeep(550, 0.04);
+        renderTourStep();
+      }
+    }
+
+    function endTour() {
+      tourIsDocked = false;
+      document.getElementById('tour-overlay').classList.add('hidden');
+      document.getElementById('tour-minimized-dock').classList.add('hidden');
+      playLabBeep(500, 0.04);
+    }
+
+    /* ---------------------------------------------------------
+       5. VIRTUAL BENCH & HEAT SHOCK MECHANICS
+       --------------------------------------------------------- */
+    const benchSteps = [
+      {
+        step: 1,
+        title: "Chemical Competence (CaCl₂)",
+        temp: "0.0°C",
+        timerSec: 10,
+        chamber: "Cold Chill Block (0°C)",
+        submode: "Ice Incubation",
+        desc: "Competent E. coli are suspended in ice-cold CaCl₂. Ca²⁺ ions neutralize negative charges on plasmid DNA phosphates and the LPS cell membrane, abolishing electrostatic repulsion.",
+        note: "Negative control tube receives sterile water; positive tube receives pBioGlow plasmid carrying the ampicillin resistance (bla) and eGFP genes.",
+        btn: "Add Plasmid DNA & Swirl Microtubes"
+      },
+      {
+        step: 2,
+        title: "Ice Incubation (10 min)",
+        temp: "0.0°C",
+        timerSec: 10,
+        chamber: "Crushed Ice Bath (0°C)",
+        submode: "Membrane Stabilization",
+        desc: "Tubes are kept on ice for 10 minutes. Low temperature condenses lipid bilayers, allowing calcium-stabilized plasmid complexes to settle directly onto outer membrane adhesion zones.",
+        note: "Crucial step: Do not agitate or warm tubes prematurely.",
+        btn: "Begin Ice Incubation Timer"
+      },
+      {
+        step: 3,
+        title: "42°C Heat-Shock Pulse",
+        temp: "42.0°C",
+        timerSec: 45,
+        chamber: "Precision 42°C Water Bath",
+        submode: "Thermal Pore Opening",
+        desc: "Microtubes are transferred rapidly into 42.0°C for exactly 45 seconds (or MiniOne Thermal Cycler profile), then immediately plunged back into ice. Thermal shock creates transient pores for plasmid uptake.",
+        note: "Henrik's Lab & Bozeman Rule: Do not exceed 45-60 seconds to prevent cell lysis.",
+        btn: "Deliver 42°C Thermal Shock"
+      },
+      {
+        step: 4,
+        title: "LB Broth Outgrowth Recovery",
+        temp: "37.0°C",
+        timerSec: 15,
+        chamber: "Shaking Incubator (37°C)",
+        submode: "bla Enzyme Synthesis",
+        desc: "Nutrient-rich LB broth is added, and cells incubate at 37°C for 20-30 minutes. This outgrowth permits cells to repair membranes and synthesize beta-lactamase (bla) before facing ampicillin.",
+        note: "Without recovery, transformed cells would be killed upon contacting ampicillin agar.",
+        btn: "Add 250 µL LB Broth & Recover"
+      },
+      {
+        step: 5,
+        title: "Inoculation on gloTray™",
+        temp: "25.0°C",
+        timerSec: 5,
+        chamber: "Inoculation Clean Bench",
+        submode: "Laminar Flow Plating",
+        desc: "Pipette 10 µL of suspension across each of the 4 partitioned lanes of the MiniOne gloTray: Lane 1 (-DNA/LB), Lane 2 (-DNA/LB+Amp), Lane 3 (+DNA/LB+Amp), Lane 4 (+DNA/LB+Amp+Inducer).",
+        note: "Trays are inverted and incubated for 18–24 hours at 37°C.",
+        btn: "Pipette Samples to gloTray"
+      }
+    ];
+
+    function setProtocolMode(mode) {
+      labState.protocolMode = mode;
+      playLabBeep(600, 0.05);
+      const sub = document.getElementById('rig-submode');
+      if (mode === 'minione') {
+        sub.textContent = "MiniOne Thermal Cycler Profile";
+      } else {
+        sub.textContent = "Water Bath & Ice Rig";
+      }
+      updateBenchUI();
+    }
+
+    function updateBenchUI() {
+      const s = benchSteps[labState.benchStep - 1];
+      document.getElementById('step-badge').textContent = `Step ${s.step} / 5`;
+      document.getElementById('step-title').textContent = s.title;
+      document.getElementById('step-detail-text').innerHTML = s.desc;
+      document.getElementById('step-sub-note').querySelector('span').innerHTML = s.note;
+      document.getElementById('rig-temp-display').textContent = s.temp;
+      document.getElementById('bench-action-text').textContent = s.btn;
+
+      const chamberName = document.getElementById('rig-chamber-name');
+      const tempDisplay = document.getElementById('rig-temp-display');
+
+      if (s.step === 3) {
+        chamberName.textContent = labState.protocolMode === 'minione' ? "Thermal Cycler 42°C Step" : "Precision 42°C Water Bath";
+        tempDisplay.className = "text-3xl font-mono font-extrabold text-rose-500 tracking-wider";
+      } else if (s.step === 4) {
+        chamberName.textContent = "Shaking Incubator (37°C)";
+        tempDisplay.className = "text-3xl font-mono font-extrabold text-amber-400 tracking-wider";
+      } else if (s.step === 5) {
+        chamberName.textContent = "gloTray Inoculation Bench";
+        tempDisplay.className = "text-3xl font-mono font-extrabold text-slate-200 tracking-wider";
+        document.getElementById('plating-prompt-box').classList.remove('hidden');
+      } else {
+        chamberName.textContent = "Cold Chill Block (0°C)";
+        tempDisplay.className = "text-3xl font-mono font-extrabold text-cyan-400 tracking-wider";
+      }
+
+      // Update dots
+      document.querySelectorAll('.bench-dot').forEach((dot, idx) => {
+        if (idx < labState.benchStep) {
+          dot.className = 'bench-dot w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-400/30';
+        } else {
+          dot.className = 'bench-dot w-2.5 h-2.5 rounded-full bg-slate-700';
+        }
+      });
+
+      // Canvas status tag
+      const tag = document.getElementById('canvas-status-tag');
+      if (s.step === 1) tag.textContent = "Electrostatic Shielding Active";
+      else if (s.step === 2) tag.textContent = "Membrane Lipid Condensation";
+      else if (s.step === 3) tag.textContent = "Thermal Pore Formation (DNA Entry)";
+      else if (s.step === 4) tag.textContent = "Membrane Healing & bla Expression";
+      else tag.textContent = "Surface Adhesion on Agar";
+    }
+
+    function executeBenchStepAction() {
+      const s = benchSteps[labState.benchStep - 1];
+      const nextBtn = document.getElementById('bench-next-btn');
+      const actionBtn = document.getElementById('bench-action-btn');
+      actionBtn.disabled = true;
+      actionBtn.classList.add('opacity-50');
+
+      playLabBeep(s.step === 3 ? 900 : 500, 0.08);
+
+      let rem = s.timerSec;
+      clearInterval(labState.benchTimerInterval);
+      labState.benchTimerInterval = setInterval(() => {
+        rem--;
+        document.getElementById('rig-timer-val').textContent = `00:${rem < 10 ? '0' : ''}${rem}`;
+        playLabBeep(400, 0.02);
+
+        if (rem <= 0) {
+          clearInterval(labState.benchTimerInterval);
+          document.getElementById('rig-timer-val').textContent = "DONE";
+          playSuccessChime();
+          nextBtn.disabled = false;
+          actionBtn.disabled = false;
+          actionBtn.classList.remove('opacity-50');
+
+          if (s.step === 3) {
+            completeQuest('heatShock', 1);
+          }
+        }
+      }, 250);
+    }
+
+    function advanceBenchStep() {
+      if (labState.benchStep < 5) {
+        labState.benchStep++;
+        document.getElementById('bench-next-btn').disabled = true;
+        document.getElementById('rig-timer-val').textContent = "00:00";
+        updateBenchUI();
+        playLabBeep(650, 0.04);
+      }
+    }
+
+    function resetBenchWorkflow() {
+      clearInterval(labState.benchTimerInterval);
+      labState.benchStep = 1;
+      document.getElementById('bench-next-btn').disabled = true;
+      document.getElementById('rig-timer-val').textContent = "00:00";
+      document.getElementById('plating-prompt-box').classList.add('hidden');
+      updateBenchUI();
+      playLabBeep(500, 0.04);
+    }
+
+    /* ---------------------------------------------------------
+       6. MOLECULAR CANVAS ANIMATION (Divalent Ca2+ & Pores)
+       --------------------------------------------------------- */
+    const molCanvas = document.getElementById('molecularCanvas');
+    const molCtx = molCanvas.getContext('2d');
+    let molIons = [];
+    let molPlasmids = [];
+
+    function initMolecularSim() {
+      molCanvas.width = molCanvas.parentElement.clientWidth;
+      molCanvas.height = molCanvas.parentElement.clientHeight;
+
+      molIons = [];
+      molPlasmids = [];
+
+      for (let i = 0; i < 45; i++) {
+        molIons.push({
+          x: Math.random() * molCanvas.width,
+          y: Math.random() * (molCanvas.height - 70),
+          vx: (Math.random() - 0.5) * 1.4,
+          vy: (Math.random() - 0.5) * 1.4,
+          radius: 4.5
+        });
+      }
+
+      for (let i = 0; i < 5; i++) {
+        molPlasmids.push({
+          x: 40 + Math.random() * (molCanvas.width - 80),
+          y: 30 + Math.random() * 80,
+          vx: (Math.random() - 0.5) * 0.7,
+          vy: (Math.random() - 0.5) * 0.7,
+          radius: 18,
+          entered: false
+        });
+      }
+    }
+
+    function drawMolecularSim() {
+      molCtx.clearRect(0, 0, molCanvas.width, molCanvas.height);
+      const isHeatShock = labState.benchStep === 3;
+      const isCold = labState.benchStep <= 2;
+      const membraneY = molCanvas.height - 60;
+
+      // Periplasm
+      molCtx.fillStyle = '#064e3b';
+      molCtx.fillRect(0, membraneY + 14, molCanvas.width, molCanvas.height - membraneY);
+
+      // Outer membrane
+      molCtx.fillStyle = '#b45309';
+      molCtx.fillRect(0, membraneY, molCanvas.width, 16);
+
+      // Heat-shock transient pores
+      if (isHeatShock) {
+        molCtx.fillStyle = '#ef4444';
+        const porePositions = [molCanvas.width * 0.25, molCanvas.width * 0.55, molCanvas.width * 0.8];
+        porePositions.forEach(px => {
+          molCtx.clearRect(px - 14, membraneY - 2, 28, 20);
+          molCtx.strokeStyle = '#f87171';
+          molCtx.lineWidth = 2;
+          molCtx.strokeRect(px - 14, membraneY - 2, 28, 20);
+          molCtx.fillStyle = '#f87171';
+          molCtx.font = '9px monospace';
+          molCtx.fillText('PORE', px - 11, membraneY + 11);
+        });
+      }
+
+      // Ca2+ Cations
+      molIons.forEach(ion => {
+        ion.x += ion.vx * (isHeatShock ? 2.5 : isCold ? 0.6 : 1.2);
+        ion.y += ion.vy * (isHeatShock ? 2.5 : isCold ? 0.6 : 1.2);
+
+        if (ion.x < 5 || ion.x > molCanvas.width - 5) ion.vx *= -1;
+        if (ion.y < 5 || ion.y > membraneY - 5) ion.vy *= -1;
+
+        molCtx.beginPath();
+        molCtx.arc(ion.x, ion.y, ion.radius, 0, Math.PI * 2);
+        molCtx.fillStyle = '#38bdf8';
+        molCtx.shadowColor = '#0284c7';
+        molCtx.shadowBlur = 6;
+        molCtx.fill();
+        molCtx.shadowBlur = 0;
+
+        molCtx.fillStyle = '#082f49';
+        molCtx.font = '7px sans-serif';
+        molCtx.fillText('2+', ion.x - 4, ion.y + 2.5);
+      });
+
+      // Plasmids
+      molPlasmids.forEach(p => {
+        p.x += p.vx * (isHeatShock ? 2 : 0.8);
+        p.y += p.vy * (isHeatShock ? 2 : 0.8);
+
+        if (p.x < 25 || p.x > molCanvas.width - 25) p.vx *= -1;
+
+        if (isHeatShock && p.y > membraneY - 30 && !p.entered) {
+          p.entered = true;
+          p.vy = 1.2;
+        } else if (!p.entered && (p.y < 20 || p.y > membraneY - 25)) {
+          p.vy *= -1;
+        }
+
+        molCtx.save();
+        molCtx.translate(p.x, p.y);
+        molCtx.beginPath();
+        molCtx.ellipse(0, 0, p.radius, p.radius * 0.65, 0.4, 0, Math.PI * 2);
+        molCtx.lineWidth = 3;
+        molCtx.strokeStyle = '#4ade80';
+        molCtx.shadowColor = '#22c55e';
+        molCtx.shadowBlur = 10;
+        molCtx.stroke();
+
+        molCtx.fillStyle = '#ffffff';
+        molCtx.font = '8px monospace';
+        molCtx.fillText('pBioGlow', -18, 2);
+        molCtx.restore();
+      });
+
+      requestAnimationFrame(drawMolecularSim);
+    }
+
+    /* ---------------------------------------------------------
+       7. WINSTON FLUORESCENCE READER & OPERON INDUCTION
+       --------------------------------------------------------- */
+    const gloCanvas = document.getElementById('gloTrayCanvas');
+    const gloCtx = gloCanvas.getContext('2d');
+
+    function setWinstonIllumination(mode) {
+      labState.winstonLight = mode;
+      playLabBeep(mode === 'blue' ? 950 : 650, 0.06);
+
+      const whiteBtn = document.getElementById('light-white-btn');
+      const blueBtn = document.getElementById('light-blue-btn');
+      const chamber = document.getElementById('chamber-box');
+      const tag = document.getElementById('chamber-light-tag');
+
+      if (mode === 'blue') {
+        blueBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-600 text-white shadow transition flex items-center gap-1.5';
+        whiteBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition flex items-center gap-1.5';
+        chamber.classList.add('chamber-fluoresce');
+        tag.textContent = "Mode: 470 nm Blue Light Excitation";
+        tag.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800";
+        completeQuest('blueLight', 2);
+      } else {
+        whiteBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-white shadow transition flex items-center gap-1.5';
+        blueBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition flex items-center gap-1.5';
+        chamber.classList.remove('chamber-fluoresce');
+        tag.textContent = "Mode: Broad White Light";
+        tag.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300";
+      }
+      renderGloTray();
+    }
+
+    function updateAmberFilter(val) {
+      labState.amberFilterOpacity = val / 100;
+      document.getElementById('amber-pct-label').textContent = `${val}%`;
+      renderGloTray();
+    }
+
+    function pipetteInducerOnLane3() {
+      labState.lane3Induced = true;
+      playSuccessChime();
+      document.getElementById('lane3-legend-status').textContent = "~65 Glowing Col.★";
+      document.getElementById('lane3-legend-status').className = "text-[10px] text-emerald-400 font-bold";
+      document.getElementById('pipette-btn-label').textContent = "Inducer Added!";
+      document.getElementById('pipette-inducer-btn').classList.add('opacity-70');
+      
+      toggleOperonInducer(true);
+      completeQuest('induceGFP', 3);
+      renderGloTray();
+    }
+
+    function toggleOperonInducer(active) {
+      labState.operonInducer = active;
+      playLabBeep(active ? 850 : 500, 0.05);
+
+      const repressor = document.getElementById('repressor-group');
+      const inducer = document.getElementById('inducer-group');
+      const rnaPoly = document.getElementById('rna-poly-group');
+      const output = document.getElementById('transcript-output');
+      const narrative = document.getElementById('operon-narrative');
+      const badge = document.getElementById('operon-state-tag');
+
+      if (active) {
+        badge.textContent = "State: Induced (Transcription Active)";
+        badge.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800";
+
+        inducer.style.opacity = '1';
+        inducer.style.transform = 'translate(240px, 45px)';
+        repressor.style.transform = 'translate(240px, 15px) rotate(25deg)';
+
+        rnaPoly.style.transform = 'translate(350px, 55px)';
+        output.style.opacity = '1';
+
+        narrative.innerHTML = "<span class='text-emerald-400 font-semibold'>Allolactose / Inducer</span> binds the allosteric site of the repressor, changing its conformation and releasing the operator. RNA Polymerase transcribes <strong>eGFP mRNA</strong>!";
+      } else {
+        badge.textContent = "State: Repressed (OFF)";
+        badge.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800";
+
+        inducer.style.opacity = '0';
+        inducer.style.transform = 'translate(240px, 20px)';
+        repressor.style.transform = 'translate(240px, 75px)';
+        rnaPoly.style.transform = 'translate(165px, 55px)';
+        output.style.opacity = '0';
+
+        narrative.innerHTML = "Active repressor is bound directly to the operator. RNA Polymerase is physically blocked from transcribing eGFP.";
+      }
+    }
+
+    // Static seeded colony coordinates for consistency
+    const lane3Coords = [];
+    const lane4Coords = [];
+    for (let i = 0; i < 40; i++) {
+      lane3Coords.push({ rx: 0.15 + Math.random() * 0.7, ry: 0.12 + Math.random() * 0.75, r: 2.2 + Math.random() * 1.8 });
+    }
+    for (let i = 0; i < 42; i++) {
+      lane4Coords.push({ rx: 0.15 + Math.random() * 0.7, ry: 0.12 + Math.random() * 0.75, r: 2.2 + Math.random() * 1.8 });
+    }
+
+    function renderGloTray() {
+      gloCanvas.width = gloCanvas.parentElement.clientWidth;
+      gloCanvas.height = gloCanvas.parentElement.clientHeight;
+
+      const w = gloCanvas.width;
+      const h = gloCanvas.height;
+
+      gloCtx.clearRect(0, 0, w, h);
+
+      // Base illumination
+      if (labState.winstonLight === 'white') {
+        gloCtx.fillStyle = '#0f172a';
+      } else {
+        // Blue 470nm light
+        gloCtx.fillStyle = labState.amberFilterOpacity > 0.4 ? '#051120' : '#042f4c';
+      }
+      gloCtx.fillRect(0, 0, w, h);
+
+      const laneW = (w - 40) / 4;
+      const laneH = h - 40;
+
+      // Draw 4 Lanes
+      for (let l = 0; l < 4; l++) {
+        const lx = 20 + l * laneW;
+        const ly = 20;
+
+        // Agar slot
+        gloCtx.fillStyle = labState.winstonLight === 'blue' ? '#04101d' : '#1e293b';
+        gloCtx.strokeStyle = labState.winstonLight === 'blue' ? '#0284c7' : '#334155';
+        gloCtx.lineWidth = 1.5;
+        gloCtx.beginPath();
+        gloCtx.roundRect(lx + 4, ly, laneW - 8, laneH, 10);
+        gloCtx.fill();
+        gloCtx.stroke();
+
+        // Label
+        gloCtx.fillStyle = '#94a3b8';
+        gloCtx.font = '10px monospace';
+        gloCtx.fillText(`LANE ${l + 1}`, lx + 12, ly + 18);
+
+        // Contents
+        if (l === 0) {
+          // Lane 1: Lawn
+          gloCtx.fillStyle = labState.winstonLight === 'white' ? 'rgba(241, 245, 249, 0.45)' : 'rgba(148, 163, 184, 0.2)';
+          for (let c = 0; c < 120; c++) {
+            gloCtx.beginPath();
+            gloCtx.arc(lx + 10 + Math.random() * (laneW - 20), ly + 25 + Math.random() * (laneH - 35), 4 + Math.random() * 3, 0, Math.PI * 2);
+            gloCtx.fill();
+          }
+        } else if (l === 1) {
+          // Lane 2: 0 colonies
+          gloCtx.fillStyle = '#64748b';
+          gloCtx.font = '10px sans-serif';
+          gloCtx.fillText('No Growth', lx + 12, ly + laneH / 2);
+        } else if (l === 2) {
+          // Lane 3: Colonies glow ONLY IF induced
+          const glows = (labState.winstonLight === 'blue' && labState.lane3Induced);
+          lane3Coords.forEach(c => {
+            const cx = lx + 4 + c.rx * (laneW - 8);
+            const cy = ly + c.ry * laneH;
+            gloCtx.beginPath();
+            gloCtx.arc(cx, cy, c.r, 0, Math.PI * 2);
+            if (glows) {
+              gloCtx.fillStyle = '#4ade80';
+              gloCtx.shadowColor = '#22c55e';
+              gloCtx.shadowBlur = 14;
+            } else {
+              gloCtx.fillStyle = labState.winstonLight === 'blue' ? '#94a3b8' : '#f8fafc';
+              gloCtx.shadowBlur = 0;
+            }
+            gloCtx.fill();
+            gloCtx.shadowBlur = 0;
+          });
+        } else if (l === 3) {
+          // Lane 4: Always glows under blue
+          const glows = (labState.winstonLight === 'blue');
+          lane4Coords.forEach(c => {
+            const cx = lx + 4 + c.rx * (laneW - 8);
+            const cy = ly + c.ry * laneH;
+            gloCtx.beginPath();
+            gloCtx.arc(cx, cy, c.r, 0, Math.PI * 2);
+            if (glows) {
+              gloCtx.fillStyle = '#22c55e';
+              gloCtx.shadowColor = '#4ade80';
+              gloCtx.shadowBlur = 16;
+            } else {
+              gloCtx.fillStyle = '#f8fafc';
+              gloCtx.shadowBlur = 0;
+            }
+            gloCtx.fill();
+            gloCtx.shadowBlur = 0;
+          });
+        }
+      }
+
+      // Amber filter effect
+      if (labState.winstonLight === 'blue' && labState.amberFilterOpacity > 0.05) {
+        gloCtx.fillStyle = `rgba(245, 158, 11, ${labState.amberFilterOpacity * 0.12})`;
+        gloCtx.fillRect(0, 0, w, h);
+      }
+    }
+
+    /* ---------------------------------------------------------
+       8. TRANSFORMATION EFFICIENCY (TE) CALCULATOR
+       --------------------------------------------------------- */
+    function runTECalculation() {
+      const conc = parseFloat(document.getElementById('calc-conc').value) || 0;
+      const volPlasmid = parseFloat(document.getElementById('calc-vol-plasmid').value) || 0;
+      const volTotal = parseFloat(document.getElementById('calc-vol-total').value) || 1;
+      const volPlated = parseFloat(document.getElementById('calc-vol-plated').value) || 0;
+      const colonies = parseFloat(document.getElementById('calc-colonies').value) || 0;
+
+      // 1. Total DNA Mass Added = conc * volPlasmid
+      const totalDNA = conc * volPlasmid;
+      // 2. Fraction Plated = volPlated / volTotal
+      const fraction = volPlated / volTotal;
+      // 3. Mass Plated = totalDNA * fraction
+      const dnaSpread = totalDNA * fraction;
+      // 4. TE = colonies / dnaSpread
+      const te = dnaSpread > 0 ? colonies / dnaSpread : 0;
+
+      document.getElementById('breakdown-mass-added').textContent = `${totalDNA.toFixed(3)} µg`;
+      document.getElementById('breakdown-fraction-plated').textContent = `${fraction.toFixed(3)} (${(fraction * 100).toFixed(1)}%)`;
+      document.getElementById('breakdown-mass-spread').textContent = `${dnaSpread.toFixed(3)} µg`;
+
+      if (te > 0) {
+        const exp = Math.floor(Math.log10(te));
+        const mantissa = te / Math.pow(10, exp);
+        document.getElementById('breakdown-result-te').textContent = `${mantissa.toFixed(2)} × 10${toSuper(exp)} CFU/µg`;
+        completeQuest('calcTE', 4);
+      } else {
+        document.getElementById('breakdown-result-te').textContent = `0 CFU/µg`;
+      }
+    }
+
+    function toSuper(num) {
+      const map = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹', '-': '⁻' };
+      return String(num).split('').map(c => map[c] || c).join('');
+    }
+
+    function loadSampleTEData(source) {
+      playLabBeep(700, 0.05);
+      if (source === 'minione') {
+        document.getElementById('calc-conc').value = "0.08";
+        document.getElementById('calc-vol-plasmid').value = "10";
+        document.getElementById('calc-vol-total').value = "500";
+        document.getElementById('calc-vol-plated').value = "100";
+        document.getElementById('calc-colonies').value = "68";
+      } else {
+        document.getElementById('calc-conc').value = "0.05";
+        document.getElementById('calc-vol-plasmid').value = "10";
+        document.getElementById('calc-vol-total').value = "510";
+        document.getElementById('calc-vol-plated').value = "100";
+        document.getElementById('calc-colonies').value = "120";
+      }
+      runTECalculation();
+    }
+
+    /* ---------------------------------------------------------
+       9. AP BIO REVIEW & FRQ PRACTICE
+       --------------------------------------------------------- */
+    const frqPrompts = [
+      {
+        id: 0,
+        title: "Question 1: Experimental Controls & Selection",
+        prompt: "Explain the experimental purpose of Lane 2 ([-] DNA on LB + Ampicillin agar) versus Lane 1 ([-] DNA on LB plain agar). What specific conclusion must the researcher make if colonies grow on Lane 2?",
+        hint: "Differentiate between viability controls and negative death controls. What does growth in antibiotic indicate?",
+        rubric: [
+          "<strong>Point 1:</strong> Lane 1 confirms competent cells survived the transformation protocol and are viable on non-selective agar. Lane 2 confirms untransformed E. coli are susceptible to ampicillin (negative death control).",
+          "<strong>Point 2:</strong> Growth on Lane 2 indicates contamination, degraded ampicillin, or spontaneous antibiotic resistance, rendering transformation efficiency results invalid."
+        ]
+      },
+      {
+        id: 1,
+        title: "Question 2: Heat-Shock & Membrane Fluidity",
+        prompt: "Describe the physiological effect of transferring competent bacteria from 0°C ice to a 42°C water bath for 45 seconds. Explain why extending this heat shock to 10 minutes decreases transformation efficiency to near zero.",
+        hint: "Consider membrane thermal pores, rapid cooling trapping, irreversible denaturation, and cell lysis.",
+        rubric: [
+          "<strong>Point 1:</strong> Rapid heating to 42°C increases lipid bilayer kinetic energy and produces transient adhesion zones (pores) through which plasmid DNA enters; subsequent chilling reseals the bilayer.",
+          "<strong>Point 2:</strong> Prolonged exposure (>45-60 s) to 42°C denatures essential bacterial proteins and causes thermal lysis, killing competent cells and reducing viable CFU."
+        ]
+      },
+      {
+        id: 2,
+        title: "Question 3: Gene Regulation & Phenotype Induction",
+        prompt: "Both Lane 3 and Lane 4 contain transformants grown in the presence of ampicillin. Explain at the molecular level why colonies on Lane 3 do NOT fluoresce green unless an inducer (e.g., lactose or IPTG) is added.",
+        hint: "Discuss constitutive beta-lactamase (bla) transcription versus allosteric repressor regulation of the promoter driving eGFP.",
+        rubric: [
+          "<strong>Point 1:</strong> The ampicillin resistance gene (bla) is constitutively expressed (continually transcribed), allowing colonies to survive in ampicillin regardless of inducer.",
+          "<strong>Point 2:</strong> The eGFP gene is governed by an inducible operon promoter repressed by a repressor protein. Transcription occurs only when lactose/IPTG allosterically binds the repressor, dislodging it from the operator."
+        ]
+      }
+    ];
+
+    function selectFRQPrompt(idx) {
+      labState.currentFRQ = idx;
+      playLabBeep(600, 0.04);
+
+      [0, 1, 2].forEach(i => {
+        const btn = document.getElementById(`frq-btn-${i}`);
+        if (i === idx) {
+          btn.className = "px-2.5 py-0.5 text-xs font-mono rounded bg-emerald-600 text-white font-semibold";
+        } else {
+          btn.className = "px-2.5 py-0.5 text-xs font-mono rounded bg-slate-800 text-slate-400 font-semibold";
+        }
+      });
+
+      const q = frqPrompts[idx];
+      document.getElementById('frq-display-title').textContent = q.title;
+      document.getElementById('frq-display-prompt').textContent = q.prompt;
+      document.getElementById('frq-hint-panel').classList.add('hidden');
+      document.getElementById('frq-hint-label').textContent = "Show Hint";
+      document.getElementById('frq-rubric-panel').classList.add('hidden');
+      document.getElementById('frq-answer-textarea').value = "";
+
+      const ul = document.getElementById('frq-rubric-list');
+      ul.innerHTML = q.rubric.map(r => `<li>${r}</li>`).join('');
+    }
+
+    function toggleFRQHintText() {
+      const panel = document.getElementById('frq-hint-panel');
+      const label = document.getElementById('frq-hint-label');
+      panel.classList.toggle('hidden');
+      label.textContent = panel.classList.contains('hidden') ? "Show Hint" : "Hide Hint";
+      playLabBeep(550, 0.04);
+    }
+
+    function evaluateFRQResponse() {
+      document.getElementById('frq-rubric-panel').classList.remove('hidden');
+      playSuccessChime();
+      completeQuest('conceptReview', 5);
+    }
+
+    /* ---------------------------------------------------------
+       10. INITIALIZATION
+       --------------------------------------------------------- */
+    window.onload = function () {
+      initMolecularSim();
+      drawMolecularSim();
+      updateBenchUI();
+      renderGloTray();
+      runTECalculation();
+      selectFRQPrompt(0);
+
+      window.addEventListener('resize', () => {
+        initMolecularSim();
+        renderGloTray();
+      });
+    };
+  </script>
+</body>
+</html>
