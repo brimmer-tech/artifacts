@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Visual Problem Solver</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.0/math.min.js"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #eef1f5;
+    --board: #ffffff;
+    --board-edge: #d6dbe3;
+    --tray: #e3e7ed;
+    --grid: #e4e8ee;
+    --grid-major: #cbd2dc;
+    --axis: #3a4150;
+    --ink: #1f2530;
+    --ink-soft: #5d6677;
+    --input-bg: #ffffff;
+    --input-edge: #c9d0da;
+    --focus: #2563eb;
+    --fx: #2563eb;
+    --dfx: #f97316;
+    --error-bg: #fff1f2;
+    --error-ink: #9f1239;
+    --error-edge: #fecdd3;
+    --btn-ink: #ffffff;
+    --shadow: 0 1px 2px rgba(31,37,48,.06), 0 10px 30px rgba(31,37,48,.08);
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #141820;
+      --board: #1d222c;
+      --board-edge: #2b323f;
+      --tray: #262d39;
+      --grid: #262d39;
+      --grid-major: #353e4d;
+      --axis: #c4ccd8;
+      --ink: #eef1f5;
+      --ink-soft: #98a2b3;
+      --input-bg: #141820;
+      --input-edge: #3a4352;
+      --focus: #60a5fa;
+      --fx: #60a5fa;
+      --dfx: #fb923c;
+      --error-bg: #3a1a22;
+      --error-ink: #fda4af;
+      --error-edge: #6b2032;
+      --btn-ink: #0f141c;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #141820;
+    --board: #1d222c;
+    --board-edge: #2b323f;
+    --tray: #262d39;
+    --grid: #262d39;
+    --grid-major: #353e4d;
+    --axis: #c4ccd8;
+    --ink: #eef1f5;
+    --ink-soft: #98a2b3;
+    --input-bg: #141820;
+    --input-edge: #3a4352;
+    --focus: #60a5fa;
+    --fx: #60a5fa;
+    --dfx: #fb923c;
+    --error-bg: #3a1a22;
+    --error-ink: #fda4af;
+    --error-edge: #6b2032;
+    --btn-ink: #0f141c;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+  }
+
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  *, *::before, *::after { box-sizing: inherit; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Nunito", "Segoe UI", system-ui, -apple-system, Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 28px 16px 48px;
+  }
+
+  header { margin-bottom: 18px; }
+  h1 {
+    margin: 0 0 4px;
+    font-size: clamp(1.6rem, 4vw, 2.2rem);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+  header p {
+    margin: 0;
+    color: var(--ink-soft);
+    max-width: 60ch;
+  }
+
+  /* The whiteboard */
+  .board {
+    background: var(--board);
+    border: 1px solid var(--board-edge);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .board-body { padding: 18px; }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+  .fx-field {
+    flex: 1 1 260px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 2px solid var(--input-edge);
+    border-radius: 10px;
+    background: var(--input-bg);
+    padding: 0 14px;
+    min-height: 52px;
+  }
+  .fx-field:focus-within { border-color: var(--focus); }
+  .fx-field label {
+    font-weight: 700;
+    color: var(--ink-soft);
+    white-space: nowrap;
+    font-size: 1.05rem;
+  }
+  .fx-field input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    font-size: 1.25rem;
+    font-weight: 600;
+    padding: 10px 0;
+  }
+  .fx-field input::placeholder { color: var(--ink-soft); opacity: .7; font-weight: 400; }
+
+  .buttons { display: flex; gap: 10px; }
+  button {
+    font: inherit;
+    font-weight: 800;
+    border: 0;
+    border-radius: 10px;
+    padding: 0 20px;
+    min-height: 52px;
+    cursor: pointer;
+    transition: transform .08s ease, filter .12s ease;
+  }
+  button:active { transform: translateY(1px); }
+  button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .plot { background: var(--fx); color: var(--btn-ink); }
+  .plot:hover { filter: brightness(1.08); }
+  .clear {
+    background: transparent;
+    color: var(--ink-soft);
+    border: 2px solid var(--input-edge);
+  }
+  .clear:hover { color: var(--ink); border-color: var(--ink-soft); }
+
+  .range-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 18px;
+    margin-top: 14px;
+    color: var(--ink-soft);
+    font-size: .95rem;
+  }
+  .range-group { display: flex; align-items: center; gap: 8px; }
+  .range-group input {
+    width: 72px;
+    font: inherit;
+    font-weight: 600;
+    color: var(--ink);
+    background: var(--input-bg);
+    border: 2px solid var(--input-edge);
+    border-radius: 8px;
+    padding: 6px 8px;
+    text-align: center;
+  }
+  .range-group input:focus { outline: 0; border-color: var(--focus); }
+  .range-note { opacity: .85; }
+
+  .legend {
+    margin-left: auto;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    font-weight: 700;
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .swatch { width: 26px; height: 4px; border-radius: 2px; display: inline-block; }
+  .swatch.fx { background: var(--fx); }
+  .swatch.dfx { background: var(--dfx); }
+
+  .error {
+    display: none;
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: var(--error-bg);
+    color: var(--error-ink);
+    border: 1px solid var(--error-edge);
+    font-weight: 600;
+  }
+  .error.show { display: block; }
+
+  .graph-wrap {
+    margin-top: 16px;
+    position: relative;
+    border: 1px solid var(--board-edge);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--board);
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+    touch-action: none;
+  }
+  .hint {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+    color: var(--ink-soft);
+    font-weight: 600;
+    pointer-events: none;
+  }
+  .hint.hidden { display: none; }
+
+  .result {
+    margin-top: 16px;
+    display: grid;
+    gap: 6px;
+  }
+  .result p {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+  }
+  .result p.fx-line { color: var(--fx); }
+  .result p.dfx-line { color: var(--dfx); }
+  .result p.empty { color: var(--ink-soft); font-weight: 500; font-size: 1rem; }
+  code { font-family: inherit; }
+
+  /* Marker tray along the bottom edge of the board */
+  .tray {
+    height: 14px;
+    background: var(--tray);
+    border-top: 1px solid var(--board-edge);
+    position: relative;
+  }
+  .tray::before, .tray::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    height: 8px;
+    width: 56px;
+    border-radius: 4px;
+  }
+  .tray::before { left: 22px; background: var(--fx); }
+  .tray::after { left: 86px; background: var(--dfx); }
+
+  .examples {
+    margin-top: 14px;
+    color: var(--ink-soft);
+    font-size: .95rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 8px;
+    align-items: center;
+  }
+  .examples button {
+    min-height: 32px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: var(--tray);
+    color: var(--ink);
+    font-weight: 700;
+    font-size: .9rem;
+  }
+  .examples button:hover { filter: brightness(.96); }
+
+  /* Explanation panel */
+  .explain {
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 2px dashed var(--board-edge);
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px 28px;
+  }
+  .explain[hidden] { display: none; }
+  @media (min-width: 760px) {
+    .explain { grid-template-columns: 1.15fr 1fr; }
+  }
+  .explain h2 {
+    margin: 0 0 10px;
+    font-size: 1.15rem;
+    font-weight: 800;
+  }
+  .explain ol {
+    list-style: none;
+    counter-reset: step;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+  }
+  .explain ol li {
+    counter-increment: step;
+    position: relative;
+    padding: 10px 12px 10px 46px;
+    background: var(--tray);
+    border-radius: 10px;
+  }
+  .explain ol li::before {
+    content: counter(step);
+    position: absolute;
+    left: 12px;
+    top: 11px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--dfx);
+    color: var(--btn-ink);
+    font-weight: 800;
+    font-size: .82rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .explain li p { margin: 0; }
+  .step-title { font-weight: 800; overflow-wrap: anywhere; }
+  .step-rule { color: var(--ink-soft); font-weight: 700; font-size: .9rem; margin-bottom: 2px !important; }
+  .explain ul {
+    margin: 0;
+    padding-left: 1.15em;
+    display: grid;
+    gap: 9px;
+  }
+  .explain ul li:last-child { color: var(--ink-soft); }
+
+  @media (max-width: 560px) {
+    .buttons { width: 100%; }
+    .buttons button { flex: 1; }
+    .legend { margin-left: 0; width: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    button { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Visual Problem Solver</h1>
+    <p>Type a function of x, plot it, and see its derivative drawn alongside it.</p>
+  </header>
+
+  <section class="board" aria-label="Whiteboard">
+    <div class="board-body">
+      <div class="input-row">
+        <div class="fx-field">
+          <label for="fx">f(x) =</label>
+          <input id="fx" type="text" inputmode="text" autocomplete="off" spellcheck="false"
+                 placeholder="x^3 - 2x + 1" aria-label="Function of x">
+        </div>
+        <div class="buttons">
+          <button class="plot" id="plotBtn" type="button">Plot It!</button>
+          <button class="clear" id="clearBtn" type="button">Clear</button>
+        </div>
+      </div>
+
+      <div class="range-row">
+        <div class="range-group">
+          <label for="xmin">x from</label>
+          <input id="xmin" type="number" value="-5" min="-10" max="10" step="0.5" aria-label="Minimum x">
+          <label for="xmax">to</label>
+          <input id="xmax" type="number" value="5" min="-10" max="10" step="0.5" aria-label="Maximum x">
+        </div>
+        <span class="range-note">(between −10 and 10)</span>
+        <div class="legend" aria-label="Legend">
+          <span><i class="swatch fx"></i>f(x)</span>
+          <span><i class="swatch dfx"></i>f′(x)</span>
+        </div>
+      </div>
+
+      <div class="error" id="error" role="alert"></div>
+
+      <div class="graph-wrap">
+        <canvas id="graph" width="880" height="520" role="img" aria-label="Graph of f(x) and its derivative"></canvas>
+        <div class="hint" id="hint">Enter a function above and press Plot It!</div>
+      </div>
+
+      <div class="result" id="result">
+        <p class="empty">The symbolic derivative will appear here.</p>
+      </div>
+
+      <section class="explain" id="explain" hidden aria-live="polite">
+        <div>
+          <h2>How to find f′(x)</h2>
+          <ol id="steps"></ol>
+        </div>
+        <div>
+          <h2>Reading the graph</h2>
+          <ul id="reading"></ul>
+        </div>
+      </section>
+
+      <div class="examples">
+        Try:
+        <button type="button" data-fx="x^2">x^2</button>
+        <button type="button" data-fx="sin(x)">sin(x)</button>
+        <button type="button" data-fx="x^3 - 2x + 1">x^3 - 2x + 1</button>
+        <button type="button" data-fx="e^x">e^x</button>
+        <button type="button" data-fx="1/x">1/x</button>
+        <button type="button" data-fx="ln(x)">ln(x)</button>
+      </div>
+    </div>
+    <div class="tray" aria-hidden="true"></div>
+  </section>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const fxInput  = document.getElementById('fx');
+  const xminIn   = document.getElementById('xmin');
+  const xmaxIn   = document.getElementById('xmax');
+  const plotBtn  = document.getElementById('plotBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  const errorBox = document.getElementById('error');
+  const hint     = document.getElementById('hint');
+  const result   = document.getElementById('result');
+  const canvas   = document.getElementById('graph');
+  const ctx      = canvas.getContext('2d');
+
+  let current = null; // { expr, fCompiled, dCompiled, dText }
+
+  // ---------- helpers ----------
+  function cssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  function showError(msg) {
+    errorBox.textContent = msg;
+    errorBox.classList.add('show');
+  }
+  function hideError() {
+    errorBox.textContent = '';
+    errorBox.classList.remove('show');
+  }
+
+  function setResultEmpty() {
+    result.innerHTML = '<p class="empty">The symbolic derivative will appear here.</p>';
+    document.getElementById('explain').hidden = true;
+  }
+
+  // Convert a math.js expression string into a friendlier display form.
+  function pretty(exprString) {
+    return exprString
+      .replace(/\s\*\s/g, '·')
+      .replace(/\s\^\s/g, '^')
+      .replace(/\blog\(/g, 'ln(');
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+
+  function readRange() {
+    let a = parseFloat(xminIn.value);
+    let b = parseFloat(xmaxIn.value);
+    if (!Number.isFinite(a) || !Number.isFinite(b)) {
+      return { error: 'The x-range needs two numbers. Try -5 to 5.' };
+    }
+    if (a < -10 || a > 10 || b < -10 || b > 10) {
+      return { error: 'Keep the x-range between -10 and 10.' };
+    }
+    if (a >= b) {
+      return { error: 'The starting x must be smaller than the ending x.' };
+    }
+    return { a, b };
+  }
+
+  // ---------- parsing ----------
+  function friendlyParseError(expr) {
+    if (!expr.trim()) return 'Type a function first, like x^2 or sin(x).';
+    const opens = (expr.match(/\(/g) || []).length;
+    const closes = (expr.match(/\)/g) || []).length;
+    if (opens !== closes) return 'Parentheses don’t match up. Check every ( has a ).';
+    if (/[=]/.test(expr)) return 'Just type the right-hand side, without "f(x) =" or "y =".';
+    return 'That doesn’t look like a function I can read. Try something like x^3 - 2x + 1.';
+  }
+
+  function buildFunction(expr) {
+    // math.js calls the natural log "log"; let students type ln(x).
+    expr = expr.replace(/\bln\s*\(/g, 'log(');
+    let node;
+    try {
+      node = math.parse(expr);
+    } catch (e) {
+      throw new Error(friendlyParseError(expr));
+    }
+
+    // Only x may appear as a free variable (plus known constants).
+    const allowed = new Set(['x', 'e', 'pi', 'E', 'PI', 'tau', 'phi']);
+    const unknown = [];
+    node.traverse((n, path, parent) => {
+      if (parent && parent.isFunctionNode && path === 'fn') return; // function names aren't variables
+      if (n.isSymbolNode && !allowed.has(n.name)) {
+        // function names are stored on FunctionNode.fn, so plain symbols here are variables
+        const isFn = typeof math[n.name] === 'function';
+        if (!isFn && !unknown.includes(n.name)) unknown.push(n.name);
+      }
+    });
+    if (unknown.length) {
+      throw new Error('Use x as the only variable. I found: ' + unknown.join(', ') + '.');
+    }
+
+    const fCompiled = node.compile();
+    // Test-evaluate once to catch things like unknown functions.
+    try {
+      fCompiled.evaluate({ x: 1.2345 });
+    } catch (e) {
+      const m = /Undefined function (\w+)/.exec(e.message);
+      if (m) throw new Error('I don’t know the function "' + m[1] + '". Try sin, cos, tan, exp, log, sqrt, abs…');
+      throw new Error('Something in that expression can’t be evaluated. Double-check it and try again.');
+    }
+
+    let dNode;
+    try {
+      dNode = math.derivative(node, 'x');
+    } catch (e) {
+      throw new Error('I can plot that, but I can’t find a symbolic derivative for it. Try a different function.');
+    }
+    let dSimplified = dNode;
+    try { dSimplified = math.simplify(dNode); } catch (e) { /* keep unsimplified */ }
+
+    return {
+      expr,
+      node,
+      fCompiled,
+      dCompiled: dSimplified.compile(),
+      dText: pretty(dSimplified.toString()),
+      fText: pretty(node.toString())
+    };
+  }
+
+  // ---------- plotting ----------
+  function sample(compiled, a, b, n) {
+    const pts = new Array(n);
+    for (let i = 0; i < n; i++) {
+      const x = a + (b - a) * i / (n - 1);
+      let y;
+      try {
+        y = compiled.evaluate({ x });
+        if (typeof y === 'object' && y !== null) {
+          // complex result (e.g. sqrt of negative) → treat as undefined
+          y = (y.im !== undefined && Math.abs(y.im) < 1e-12) ? y.re : NaN;
+        }
+        if (typeof y !== 'number') y = NaN;
+      } catch (e) { y = NaN; }
+      pts[i] = { x, y };
+    }
+    return pts;
+  }
+
+  function niceStep(span, targetTicks) {
+    const raw = span / targetTicks;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const norm = raw / mag;
+    let step;
+    if (norm < 1.5) step = 1;
+    else if (norm < 3) step = 2;
+    else if (norm < 7) step = 5;
+    else step = 10;
+    return step * mag;
+  }
+
+  function fmt(v) {
+    if (Math.abs(v) < 1e-9) return '0';
+    const s = Math.abs(v) >= 1000 ? v.toExponential(1) : parseFloat(v.toPrecision(4)).toString();
+    return s;
+  }
+
+  function resizeCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = canvas.clientWidth || 880;
+    const cssH = Math.max(260, Math.min(520, Math.round(cssW * 0.6)));
+    canvas.style.height = cssH + 'px';
+    canvas.width  = Math.round(cssW * dpr);
+    canvas.height = Math.round(cssH * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { w: cssW, h: cssH };
+  }
+
+  function draw() {
+    const { w, h } = resizeCanvas();
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = cssVar('--board');
+    ctx.fillRect(0, 0, w, h);
+
+    const range = readRange();
+    const a = range.error ? -5 : range.a;
+    const b = range.error ? 5 : range.b;
+
+    const pad = { l: 44, r: 16, t: 16, b: 32 };
+    const pw = w - pad.l - pad.r;
+    const ph = h - pad.t - pad.b;
+
+    // Determine y-range from samples (robust to spikes/asymptotes).
+    let yMin = -5, yMax = 5;
+    let fPts = null, dPts = null;
+    if (current) {
+      const n = Math.max(300, Math.min(1200, Math.round(pw * 1.5)));
+      fPts = sample(current.fCompiled, a, b, n);
+      dPts = sample(current.dCompiled, a, b, n);
+      const ys = fPts.concat(dPts).map(p => p.y).filter(Number.isFinite).sort((p, q) => p - q);
+      if (ys.length) {
+        // Use 2nd–98th percentile to ignore asymptote blow-ups
+        const lo = ys[Math.floor(ys.length * 0.02)];
+        const hi = ys[Math.ceil(ys.length * 0.98) - 1];
+        let span = hi - lo;
+        if (!(span > 1e-9)) span = Math.max(1, Math.abs(hi) * 0.5);
+        yMin = lo - span * 0.1;
+        yMax = hi + span * 0.1;
+        // Always include the x-axis when it is reasonably close.
+        if (yMin > 0 && yMin < span * 0.6) yMin = -span * 0.05;
+        if (yMax < 0 && -yMax < span * 0.6) yMax = span * 0.05;
+        // Guard against absurd ranges
+        const cap = 1e6;
+        yMin = Math.max(yMin, -cap); yMax = Math.min(yMax, cap);
+      }
+    }
+
+    const sx = x => pad.l + (x - a) / (b - a) * pw;
+    const sy = y => pad.t + (yMax - y) / (yMax - yMin) * ph;
+
+    // Grid
+    const xStep = niceStep(b - a, 10);
+    const yStep = niceStep(yMax - yMin, 8);
+    ctx.lineWidth = 1;
+
+    // minor grid (half steps)
+    ctx.strokeStyle = cssVar('--grid');
+    ctx.beginPath();
+    for (let x = Math.ceil(a / (xStep / 2)) * (xStep / 2); x <= b + 1e-9; x += xStep / 2) {
+      const px = Math.round(sx(x)) + 0.5; ctx.moveTo(px, pad.t); ctx.lineTo(px, pad.t + ph);
+    }
+    for (let y = Math.ceil(yMin / (yStep / 2)) * (yStep / 2); y <= yMax + 1e-9; y += yStep / 2) {
+      const py = Math.round(sy(y)) + 0.5; ctx.moveTo(pad.l, py); ctx.lineTo(pad.l + pw, py);
+    }
+    ctx.stroke();
+
+    // major grid + labels
+    ctx.strokeStyle = cssVar('--grid-major');
+    ctx.fillStyle = cssVar('--ink-soft');
+    ctx.font = '600 12px Nunito, "Segoe UI", system-ui, sans-serif';
+    ctx.beginPath();
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    for (let x = Math.ceil(a / xStep) * xStep; x <= b + 1e-9; x += xStep) {
+      const px = Math.round(sx(x)) + 0.5; ctx.moveTo(px, pad.t); ctx.lineTo(px, pad.t + ph);
+      ctx.fillText(fmt(x), px, pad.t + ph + 6);
+    }
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    for (let y = Math.ceil(yMin / yStep) * yStep; y <= yMax + 1e-9; y += yStep) {
+      const py = Math.round(sy(y)) + 0.5; ctx.moveTo(pad.l, py); ctx.lineTo(pad.l + pw, py);
+      ctx.fillText(fmt(y), pad.l - 6, py);
+    }
+    ctx.stroke();
+
+    // Axes
+    ctx.strokeStyle = cssVar('--axis');
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    if (yMin <= 0 && yMax >= 0) { const py = sy(0); ctx.moveTo(pad.l, py); ctx.lineTo(pad.l + pw, py); }
+    if (a <= 0 && b >= 0)       { const px = sx(0); ctx.moveTo(px, pad.t); ctx.lineTo(px, pad.t + ph); }
+    ctx.stroke();
+
+    // Axis titles
+    ctx.fillStyle = cssVar('--axis');
+    ctx.font = '700 13px Nunito, "Segoe UI", system-ui, sans-serif';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+    ctx.fillText('x', pad.l + pw - 2, (yMin <= 0 && yMax >= 0 ? sy(0) : pad.t + ph) - 4);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('y', (a <= 0 && b >= 0 ? sx(0) : pad.l) + 6, pad.t + 2);
+
+    if (!current) return;
+
+    // Curves
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(pad.l, pad.t, pw, ph);
+    ctx.clip();
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+
+    function plotCurve(pts, color) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2.6;
+      ctx.beginPath();
+      let pen = false;
+      const jump = (yMax - yMin) * 1.5;
+      for (let i = 0; i < pts.length; i++) {
+        const p = pts[i];
+        if (!Number.isFinite(p.y)) { pen = false; continue; }
+        const prev = pts[i - 1];
+        const broke = prev && Number.isFinite(prev.y) && Math.abs(p.y - prev.y) > jump &&
+                      ((prev.y > yMax && p.y < yMin) || (prev.y < yMin && p.y > yMax));
+        const px = sx(p.x), py = sy(Math.max(yMin - 10, Math.min(yMax + 10, p.y)));
+        if (!pen || broke) { ctx.moveTo(px, py); pen = true; }
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
+
+    plotCurve(dPts, cssVar('--dfx'));
+    plotCurve(fPts, cssVar('--fx'));
+
+    // Mark turning points / flat points on both curves
+    (current.critical || []).forEach(p => {
+      const px = sx(p.x);
+      const zeroVisible = yMin <= 0 && yMax >= 0;
+      ctx.save();
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = cssVar('--ink-soft');
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(px, sy(p.y));
+      ctx.lineTo(px, zeroVisible ? sy(0) : pad.t + ph);
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.lineWidth = 2.5;
+      ctx.fillStyle = cssVar('--board');
+      ctx.strokeStyle = cssVar('--fx');
+      ctx.beginPath(); ctx.arc(px, sy(p.y), 5.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      if (zeroVisible) {
+        ctx.strokeStyle = cssVar('--dfx');
+        ctx.beginPath(); ctx.arc(px, sy(0), 4.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      }
+    });
+    ctx.restore();
+  }
+
+  // ---------- explanations ----------
+  function unwrap(node) { while (node && node.isParenthesisNode) node = node.content; return node; }
+  function hasX(node) {
+    let found = false;
+    node.traverse(n => { if (n.isSymbolNode && n.name === 'x') found = true; });
+    return found;
+  }
+  function isX(node) { node = unwrap(node); return node.isSymbolNode && node.name === 'x'; }
+  function show(node) { return pretty(unwrap(node).toString()); }
+  function derivText(node) {
+    try { return pretty(math.simplify(math.derivative(node, 'x')).toString()); }
+    catch (e) { return '?'; }
+  }
+  function evalNum(compiled, x) {
+    try {
+      let y = compiled.evaluate({ x });
+      if (y && typeof y === 'object') y = (y.im !== undefined && Math.abs(y.im) < 1e-12) ? y.re : NaN;
+      return typeof y === 'number' ? y : NaN;
+    } catch (e) { return NaN; }
+  }
+
+  const FN_RULES = {
+    sin:   { label: 'Sine rule', d: 'cos(u)', why: 'The slope of sine is cosine.' },
+    cos:   { label: 'Cosine rule', d: '−sin(u)', why: 'The slope of cosine is negative sine.' },
+    tan:   { label: 'Tangent rule', d: 'sec²(u)', why: 'The slope of tangent is secant squared (1 / cos²).' },
+    sec:   { label: 'Secant rule', d: 'sec(u)·tan(u)', why: 'The slope of secant is secant times tangent.' },
+    csc:   { label: 'Cosecant rule', d: '−csc(u)·cot(u)', why: 'The slope of cosecant is negative cosecant times cotangent.' },
+    cot:   { label: 'Cotangent rule', d: '−csc²(u)', why: 'The slope of cotangent is negative cosecant squared.' },
+    exp:   { label: 'Exponential rule', d: 'e^u', why: 'eˣ is its own derivative: its slope always equals its height.' },
+    log:   { label: 'Natural log rule', d: '1/u', why: 'The slope of ln(u) is 1 divided by u.' },
+    log10: { label: 'Log rule', d: '1/(u·ln 10)', why: 'log₁₀(u) is ln(u) / ln(10), so its slope is 1 / (u·ln 10).' },
+    sqrt:  { label: 'Power rule', d: '1/(2√u)', why: 'Rewrite √u as u^(1/2). Bring the ½ down and subtract 1 from the exponent.' },
+    abs:   { label: 'Absolute value rule', d: 'u/|u|', why: 'The slope of |u| is +1 where u is positive and −1 where u is negative. At u = 0 there’s a sharp corner, so no derivative there.' },
+    asin:  { label: 'Inverse sine rule', d: '1/√(1−u²)', why: 'This is the standard derivative of arcsine.' },
+    acos:  { label: 'Inverse cosine rule', d: '−1/√(1−u²)', why: 'This is the standard derivative of arccosine.' },
+    atan:  { label: 'Inverse tangent rule', d: '1/(1+u²)', why: 'This is the standard derivative of arctangent.' }
+  };
+
+  function ruleFor(raw) {
+    const node = unwrap(raw);
+    if (!hasX(node)) return { rule: 'Constant rule', why: 'There’s no x in this piece, so it never changes. Its slope is 0.' };
+    if (isX(node)) return { rule: 'Power rule', why: 'x is the same as x¹. Bring the 1 down and subtract 1 from the exponent: 1·x⁰ = 1.' };
+
+    if (node.isOperatorNode) {
+      const A = node.args[0], B = node.args[1];
+      switch (node.fn) {
+        case 'unaryPlus':
+          return ruleFor(A);
+        case 'unaryMinus':
+          return { rule: 'Constant multiple rule', why: 'The minus sign is a factor of −1. Keep it out front and differentiate ' + show(A) + ', which gives ' + derivText(A) + '.' };
+        case 'add':
+        case 'subtract':
+          return { rule: 'Sum rule', why: 'Differentiate each piece separately, then add or subtract the results.' };
+        case 'multiply':
+          if (!hasX(A) || !hasX(B)) {
+            const c = hasX(A) ? B : A, rest = hasX(A) ? A : B;
+            return { rule: 'Constant multiple rule', why: 'The constant ' + show(c) + ' just comes along for the ride. Multiply it by the derivative of ' + show(rest) + ', which is ' + derivText(rest) + '.' };
+          }
+          return { rule: 'Product rule', why: 'For u·v, the derivative is u′·v + u·v′. Here u = ' + show(A) + ' (so u′ = ' + derivText(A) + ') and v = ' + show(B) + ' (so v′ = ' + derivText(B) + ').' };
+        case 'divide':
+          if (!hasX(B)) {
+            return { rule: 'Constant multiple rule', why: 'Dividing by ' + show(B) + ' is the same as multiplying by 1/' + show(B) + '. Keep it, and differentiate ' + show(A) + ' to get ' + derivText(A) + '.' };
+          }
+          if (!hasX(A)) {
+            return { rule: 'Power rule' + (isX(B) ? '' : ' + chain rule'), why: 'Rewrite it as ' + show(A) + '·(' + show(B) + ')^(−1). Bring down the −1 and subtract 1 from the exponent' + (isX(B) ? '.' : ', then multiply by the derivative of the inside, ' + derivText(B) + '.') };
+          }
+          return { rule: 'Quotient rule', why: 'For u/v, the derivative is (u′·v − u·v′) / v². Here u = ' + show(A) + ' (so u′ = ' + derivText(A) + ') and v = ' + show(B) + ' (so v′ = ' + derivText(B) + ').' };
+        case 'pow': {
+          if (!hasX(B)) {
+            if (isX(A)) return { rule: 'Power rule', why: 'Bring the exponent ' + show(B) + ' down in front, then subtract 1 from the exponent.' };
+            return { rule: 'Power rule + chain rule', why: 'Treat ' + show(A) + ' as the inside, u. Bring down the ' + show(B) + ', subtract 1 from the exponent, then multiply by u′ = ' + derivText(A) + '.' };
+          }
+          if (!hasX(A)) {
+            const base = unwrap(A);
+            const isE = base.isSymbolNode && (base.name === 'e' || base.name === 'E');
+            const chain = isX(B) ? '' : ' The exponent is ' + show(B) + ', so the chain rule multiplies by its derivative, ' + derivText(B) + '.';
+            const label = 'Exponential rule' + (isX(B) ? '' : ' + chain rule');
+            if (isE) return { rule: label, why: 'eˣ is its own derivative: its slope always equals its height.' + chain };
+            return { rule: label, why: 'The derivative of ' + show(A) + '^x is ' + show(A) + '^x · ln(' + show(A) + ').' + chain };
+          }
+          return { rule: 'Logarithmic differentiation', why: 'x is in both the base and the exponent, so neither the power rule nor the exponential rule fits by itself. Take ln of both sides first, then differentiate.' };
+        }
+      }
+    }
+
+    if (node.isFunctionNode && node.args.length === 1) {
+      const name = node.fn.name, u = node.args[0];
+      const entry = FN_RULES[name];
+      if (entry) {
+        const disp = name === 'log' ? 'ln' : name;
+        const formula = isX(u)
+          ? 'd/dx ' + disp + '(x) = ' + entry.d.replace(/u/g, 'x')
+          : 'd/du ' + disp + '(u) = ' + entry.d;
+        const chain = isX(u) ? '' : ' The inside is u = ' + show(u) + ', so the chain rule multiplies by u′ = ' + derivText(u) + '.';
+        return { rule: entry.label + (isX(u) ? '' : ' + chain rule'), why: entry.why + ' In symbols: ' + formula + '.' + chain };
+      }
+    }
+    return { rule: 'Combined rules', why: 'This piece needs several derivative rules at once. math.js applied them for you.' };
+  }
+
+  function collectTerms(node, sign, out) {
+    node = unwrap(node);
+    if (node.isOperatorNode && node.fn === 'add') {
+      collectTerms(node.args[0], sign, out); collectTerms(node.args[1], sign, out);
+    } else if (node.isOperatorNode && node.fn === 'subtract') {
+      collectTerms(node.args[0], sign, out); collectTerms(node.args[1], -sign, out);
+    } else {
+      out.push({ node, sign });
+    }
+  }
+
+  function buildSteps(node) {
+    const steps = [];
+    const terms = [];
+    collectTerms(node, 1, terms);
+    if (terms.length > 1) {
+      steps.push({
+        title: 'Split it into pieces',
+        rule: 'Sum rule',
+        body: 'f(x) has ' + terms.length + ' pieces: ' + terms.map(t => (t.sign < 0 ? '−' : '') + show(t.node)).join(',  ') + '. The derivative of a sum is the sum of the derivatives, so handle each piece on its own.'
+      });
+      terms.forEach(t => {
+        const r = ruleFor(t.node);
+        steps.push({ title: 'd/dx [ ' + show(t.node) + ' ] = ' + derivText(t.node), rule: r.rule, body: r.why });
+      });
+      steps.push({
+        title: 'Put the pieces back together',
+        rule: null,
+        body: 'Keep the same + and − signs between the pieces and simplify: f′(x) = ' + current.dText + '.'
+      });
+    } else {
+      const r = ruleFor(node);
+      steps.push({ title: 'd/dx [ ' + show(node) + ' ] = ' + current.dText, rule: r.rule, body: r.why });
+    }
+    return steps;
+  }
+
+  function analyze(a, b) {
+    const N = 801;
+    const d = x => evalNum(current.dCompiled, x);
+    const f = x => evalNum(current.fCompiled, x);
+    const xs = [], ds = [];
+    let gaps = 0, maxAbs = 0;
+    for (let i = 0; i < N; i++) {
+      const x = a + (b - a) * i / (N - 1);
+      const dv = d(x);
+      xs.push(x); ds.push(dv);
+      if (!Number.isFinite(f(x))) gaps++;
+      if (Number.isFinite(dv)) maxAbs = Math.max(maxAbs, Math.abs(dv));
+    }
+    const notes = [];
+
+    if (maxAbs <= 1e-12) {
+      notes.push('f′(x) is 0 everywhere, so the orange line sits right on the x-axis and the blue line is flat. A constant never rises or falls.');
+      return { crit: [], notes };
+    }
+
+    const tol = 1e-9 * (1 + maxAbs);
+    const crit = [];
+    let lastSign = 0, lastX = null, sawPos = false, sawNeg = false;
+
+    // Sign changes of f' → local max / min
+    for (let i = 0; i < N; i++) {
+      const dv = ds[i];
+      if (!Number.isFinite(dv)) { lastSign = 0; continue; }
+      const s = Math.abs(dv) <= tol ? 0 : Math.sign(dv);
+      if (s > 0) sawPos = true;
+      if (s < 0) sawNeg = true;
+      if (s === 0) continue;
+      if (lastSign !== 0 && s !== lastSign) {
+        let lo = lastX, hi = xs[i];
+        for (let k = 0; k < 60; k++) {
+          const mid = (lo + hi) / 2;
+          if (Math.sign(d(mid)) === lastSign) lo = mid; else hi = mid;
+        }
+        const r = (lo + hi) / 2, fy = f(r), dr = d(r);
+        if (Number.isFinite(fy) && Number.isFinite(dr) && Math.abs(dr) < 1e-4 * (1 + maxAbs)) {
+          crit.push({ x: r, y: fy, type: lastSign > 0 ? 'max' : 'min' });
+        }
+      }
+      lastSign = s; lastX = xs[i];
+    }
+
+    // f' touches zero without crossing → flat point (like x^3 at 0)
+    for (let i = 1; i < N - 1; i++) {
+      const p = ds[i - 1], c = ds[i], q = ds[i + 1];
+      if (![p, c, q].every(Number.isFinite)) continue;
+      if (Math.abs(c) > Math.abs(p) || Math.abs(c) > Math.abs(q)) continue;
+      if (Math.sign(p) === 0 || Math.sign(p) !== Math.sign(q)) continue;
+      let lo = xs[i - 1], hi = xs[i + 1];
+      for (let k = 0; k < 80; k++) {
+        const m1 = lo + (hi - lo) / 3, m2 = hi - (hi - lo) / 3;
+        if (Math.abs(d(m1)) < Math.abs(d(m2))) hi = m2; else lo = m1;
+      }
+      const r = (lo + hi) / 2, fy = f(r);
+      if (Number.isFinite(fy) && Math.abs(d(r)) < 1e-7 * (1 + maxAbs) &&
+          !crit.some(cp => Math.abs(cp.x - r) < 2 * (b - a) / N)) {
+        crit.push({ x: r, y: fy, type: 'flat' });
+      }
+    }
+    crit.sort((p, q) => p.x - q.x);
+
+    if (!crit.length) {
+      if (sawPos && !sawNeg) notes.push('The orange curve stays above the x-axis, so f′(x) > 0 everywhere here. That’s why the blue curve keeps rising from left to right.');
+      else if (sawNeg && !sawPos) notes.push('The orange curve stays below the x-axis, so f′(x) < 0 everywhere here. That’s why the blue curve keeps falling from left to right.');
+      else notes.push('f′(x) only switches sign where the graph breaks apart, so the blue curve rises on some pieces and falls on others, without a smooth peak or valley.');
+    } else {
+      crit.slice(0, 6).forEach(p => {
+        const at = '(' + fmt(p.x) + ', ' + fmt(p.y) + ')';
+        if (p.type === 'max') {
+          notes.push('At x ≈ ' + fmt(p.x) + ', the orange curve crosses zero going from + to −. The blue curve stops rising and starts falling: a local maximum at ' + at + '.');
+        } else if (p.type === 'min') {
+          notes.push('At x ≈ ' + fmt(p.x) + ', the orange curve crosses zero going from − to +. The blue curve stops falling and starts rising: a local minimum at ' + at + '.');
+        } else {
+          notes.push('At x ≈ ' + fmt(p.x) + ', the orange curve touches zero but doesn’t cross it. The blue curve levels off for an instant at ' + at + ', then keeps going the same direction, so it’s neither a max nor a min.');
+        }
+      });
+      if (crit.length > 6) notes.push('…plus ' + (crit.length - 6) + ' more points like these, all marked on the graph.');
+
+      if (!gaps) {
+        const cuts = [a].concat(crit.filter(c => c.type !== 'flat').map(c => c.x), [b]);
+        const up = [], down = [];
+        for (let i = 0; i < cuts.length - 1; i++) {
+          const l = cuts[i], r = cuts[i + 1];
+          const s = Math.sign(d(l + 0.3 * (r - l))) || Math.sign(d(l + 0.7 * (r - l)));
+          const label = '(' + fmt(l) + ', ' + fmt(r) + ')';
+          if (s > 0) up.push(label); else if (s < 0) down.push(label);
+        }
+        const parts = [];
+        if (up.length) parts.push('increasing on ' + up.join(' and '));
+        if (down.length) parts.push('decreasing on ' + down.join(' and '));
+        if (parts.length) notes.push('So f is ' + parts.join(', and ') + '.');
+      }
+      notes.push('Hollow dots on the graph mark these points on both curves.');
+    }
+
+    if (gaps) notes.push('f(x) isn’t defined for every x in this range (you can’t take ln or √ of a negative number, or divide by zero), so the curves have gaps.');
+    notes.push('Rule of thumb: orange above the x-axis means blue is going up; orange below means blue is going down; orange at zero means blue is flat for an instant.');
+    return { crit, notes };
+  }
+
+  function renderExplanation() {
+    const explainEl = document.getElementById('explain');
+    const stepsEl = document.getElementById('steps');
+    const readingEl = document.getElementById('reading');
+    const range = readRange();
+
+    let steps;
+    try { steps = buildSteps(current.node); }
+    catch (e) { steps = [{ title: 'f′(x) = ' + current.dText, rule: null, body: 'math.js applied the derivative rules to get this result.' }]; }
+    stepsEl.innerHTML = steps.map(s =>
+      '<li><p class="step-title">' + escapeHtml(s.title) + '</p>' +
+      (s.rule ? '<p class="step-rule">' + escapeHtml(s.rule) + '</p>' : '') +
+      '<p>' + escapeHtml(s.body) + '</p></li>'
+    ).join('');
+
+    const info = analyze(range.a, range.b);
+    current.critical = info.crit;
+    readingEl.innerHTML = info.notes.map(t => '<li>' + escapeHtml(t) + '</li>').join('');
+    explainEl.hidden = false;
+  }
+
+  // ---------- actions ----------
+  function plot() {
+    hideError();
+    const expr = fxInput.value.trim();
+    const range = readRange();
+    if (range.error) { showError(range.error); return; }
+    try {
+      current = buildFunction(expr);
+    } catch (e) {
+      current = null;
+      showError(e.message);
+      setResultEmpty();
+      hint.classList.remove('hidden');
+      draw();
+      return;
+    }
+    hint.classList.add('hidden');
+    result.innerHTML =
+      '<p class="fx-line">f(x) = ' + escapeHtml(current.fText) + '</p>' +
+      '<p class="dfx-line">f′(x) = ' + escapeHtml(current.dText) + '</p>';
+    renderExplanation();
+    draw();
+  }
+
+  function clearAll() {
+    current = null;
+    fxInput.value = '';
+    xminIn.value = '-5';
+    xmaxIn.value = '5';
+    hideError();
+    setResultEmpty();
+    hint.classList.remove('hidden');
+    draw();
+    fxInput.focus();
+  }
+
+  plotBtn.addEventListener('click', plot);
+  clearBtn.addEventListener('click', clearAll);
+  fxInput.addEventListener('keydown', e => { if (e.key === 'Enter') plot(); });
+  [xminIn, xmaxIn].forEach(el => {
+    el.addEventListener('keydown', e => { if (e.key === 'Enter') plot(); });
+    el.addEventListener('change', () => { if (current) plot(); else draw(); });
+  });
+  document.querySelectorAll('.examples button').forEach(btn => {
+    btn.addEventListener('click', () => { fxInput.value = btn.dataset.fx; plot(); });
+  });
+
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(draw, 80);
+  });
+  if (window.matchMedia) {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', draw);
+  }
+
+  if (typeof math === 'undefined') {
+    showError('The math library didn’t load. Check your connection and reload the page.');
+    plotBtn.disabled = true;
+  }
+
+  draw();
+})();
+</script>
+</body>
+</html>
