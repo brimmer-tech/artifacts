@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Tip Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    /* Card palette — card colors are always light, so card ink stays dark in both themes */
+    --ink: #1f1b16;
+    --ink-soft: #4a4339;
+    --field: #fffdf8;
+    --line: #1f1b16;
+    --card: #ffb36b;
+    --focus: #1f1b16;
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+
+  /* Page background intentionally left at the browser default */
+  body {
+    margin: 0;
+    min-height: 100%;
+    font-family: "Bricolage Grotesque", "Segoe UI", system-ui, -apple-system, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: clamp(1rem, 4vw, 3rem) 1rem;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 30rem;
+    background: var(--card);
+    color: var(--ink);
+    border: 2px solid var(--line);
+    border-radius: 1.5rem;
+    padding: clamp(1.25rem, 5vw, 2rem);
+    box-shadow: 6px 6px 0 var(--line);
+    transition: background-color 0.25s ease;
+  }
+
+  .head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+  }
+  h1 {
+    margin: 0;
+    font-weight: 800;
+    font-size: clamp(1.75rem, 7vw, 2.25rem);
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  .swatches { display: flex; gap: 0.5rem; }
+  .swatch {
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+    border: 2px solid var(--line);
+    cursor: pointer;
+    padding: 0;
+  }
+  .swatch[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--card), 0 0 0 5px var(--line); }
+
+  .field { margin-bottom: 1.25rem; }
+  .field > label, .field > .label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .input-wrap {
+    display: flex;
+    align-items: center;
+    background: var(--field);
+    border: 2px solid var(--line);
+    border-radius: 0.75rem;
+    padding: 0 0.85rem;
+  }
+  .input-wrap:focus-within { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .input-wrap span { font-weight: 600; color: var(--ink-soft); }
+  .input-wrap input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    font-size: 1.25rem;
+    font-weight: 600;
+    padding: 0.6rem 0.35rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .input-wrap input:focus { outline: none; }
+
+  .tips {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .tip-btn {
+    font: inherit;
+    font-weight: 600;
+    font-size: 1rem;
+    padding: 0.6rem 0;
+    border: 2px solid var(--line);
+    border-radius: 0.75rem;
+    background: var(--field);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .tip-btn[aria-pressed="true"] { background: var(--ink); color: var(--field); }
+  .tip-btn:focus-visible, .swatch:focus-visible, .stepper button:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+  }
+  .custom.active { background: var(--ink); }
+  .custom.active span, .custom.active input { color: var(--field); }
+
+  .stepper { display: flex; gap: 0.5rem; }
+  .stepper .input-wrap { flex: 1; }
+  .stepper input { text-align: center; }
+  .stepper button {
+    font: inherit;
+    font-size: 1.4rem;
+    font-weight: 600;
+    width: 3rem;
+    border: 2px solid var(--line);
+    border-radius: 0.75rem;
+    background: var(--field);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .stepper button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .check {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin: 0.25rem 0 1.5rem;
+  }
+  .check input { width: 1.25rem; height: 1.25rem; accent-color: var(--ink); cursor: pointer; }
+
+  .result {
+    background: var(--field);
+    border: 2px solid var(--line);
+    border-radius: 1rem;
+    padding: 1.25rem;
+  }
+  .hero { text-align: center; padding-bottom: 1rem; border-bottom: 2px dashed var(--line); margin-bottom: 0.75rem; }
+  .hero p { margin: 0; font-weight: 600; color: var(--ink-soft); }
+  .hero output {
+    display: block;
+    font-size: clamp(2.5rem, 13vw, 3.5rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+  .hero small { display: block; min-height: 1.3em; color: var(--ink-soft); font-size: 0.9rem; }
+
+  dl { margin: 0; }
+  .row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.4rem 0;
+  }
+  .row dt { color: var(--ink-soft); }
+  .row dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .row.muted { opacity: 0.45; }
+
+  .error { color: #9b1c1c; font-weight: 600; font-size: 0.9rem; min-height: 1.2em; margin: 0.35rem 0 0; }
+
+  @media (max-width: 22rem) {
+    .tips { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .card { transition: none; }
+  }
+</style>
+</head>
+<body>
+  <main class="card" id="card">
+    <div class="head">
+      <h1>TIP CALCULATOR</h1>
+      <div class="swatches" role="group" aria-label="Card color">
+        <button class="swatch" style="background:#ffb36b" data-color="#ffb36b" aria-label="Orange" aria-pressed="true"></button>
+        <button class="swatch" style="background:#cdb8f5" data-color="#cdb8f5" aria-label="Light purple" aria-pressed="false"></button>
+        <button class="swatch" style="background:#ffe27a" data-color="#ffe27a" aria-label="Yellow" aria-pressed="false"></button>
+        <button class="swatch" style="background:#a8dfa0" data-color="#a8dfa0" aria-label="Green" aria-pressed="false"></button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="bill">Bill subtotal</label>
+      <div class="input-wrap">
+        <span aria-hidden="true">$</span>
+        <input id="bill" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00">
+      </div>
+      <p class="error" id="billError" aria-live="polite"></p>
+    </div>
+
+    <div class="field">
+      <span class="label" id="tipLabel">Tip</span>
+      <div class="tips" role="group" aria-labelledby="tipLabel">
+        <button class="tip-btn" data-tip="15" aria-pressed="false">15%</button>
+        <button class="tip-btn" data-tip="18" aria-pressed="true">18%</button>
+        <button class="tip-btn" data-tip="20" aria-pressed="false">20%</button>
+        <button class="tip-btn" data-tip="25" aria-pressed="false">25%</button>
+      </div>
+      <div class="input-wrap custom" id="customWrap">
+        <input id="customTip" type="number" inputmode="decimal" min="0" step="0.1" placeholder="Custom" aria-label="Custom tip percentage">
+        <span aria-hidden="true">%</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="people">People splitting</label>
+      <div class="stepper">
+        <button type="button" id="minus" aria-label="Remove one person">−</button>
+        <div class="input-wrap">
+          <input id="people" type="number" inputmode="numeric" min="1" step="1" value="1">
+        </div>
+        <button type="button" id="plus" aria-label="Add one person">+</button>
+      </div>
+    </div>
+
+    <label class="check">
+      <input type="checkbox" id="round">
+      Round each share to the nearest dollar
+    </label>
+
+    <section class="result" aria-live="polite">
+      <div class="hero">
+        <p>Each person pays</p>
+        <output id="heroAmt">$0.00</output>
+        <small id="heroNote"></small>
+      </div>
+      <dl>
+        <div class="row"><dt>Tip amount</dt><dd id="tipAmt">$0.00</dd></div>
+        <div class="row"><dt>Total bill</dt><dd id="totalAmt">$0.00</dd></div>
+        <div class="row" id="exactRow"><dt>Per person (exact)</dt><dd id="exactAmt">$0.00</dd></div>
+        <div class="row" id="roundRow"><dt>Per person (rounded)</dt><dd id="roundAmt">$0</dd></div>
+      </dl>
+    </section>
+  </main>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const bill = $("bill"), customTip = $("customTip"), people = $("people"), round = $("round");
+  const tipBtns = document.querySelectorAll(".tip-btn");
+  const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+  const wholeMoney = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+
+  let tipPct = 18;
+  let usingCustom = false;
+
+  function getPeople() {
+    const n = Math.floor(Number(people.value));
+    return Number.isFinite(n) && n >= 1 ? n : 1;
+  }
+
+  function update() {
+    const raw = bill.value.trim();
+    let sub = Number(raw);
+    if (raw !== "" && (!Number.isFinite(sub) || sub < 0)) {
+      $("billError").textContent = "Enter a bill amount of 0 or more.";
+      sub = 0;
+    } else {
+      $("billError").textContent = "";
+      if (!Number.isFinite(sub)) sub = 0;
+    }
+
+    const pct = usingCustom ? Math.max(0, Number(customTip.value) || 0) : tipPct;
+    const n = getPeople();
+    const tip = sub * pct / 100;
+    const total = sub + tip;
+    const exact = total / n;
+    const rounded = Math.round(exact);
+
+    $("tipAmt").textContent = money.format(tip);
+    $("totalAmt").textContent = money.format(total);
+    $("exactAmt").textContent = money.format(exact);
+    $("roundAmt").textContent = wholeMoney.format(rounded);
+    $("minus").disabled = n <= 1;
+
+    if (round.checked) {
+      $("heroAmt").textContent = wholeMoney.format(rounded);
+      const collected = rounded * n;
+      const diff = collected - total;
+      $("heroNote").textContent = total > 0
+        ? `Group pays ${money.format(collected)} (${diff >= 0 ? "+" : "−"}${money.format(Math.abs(diff))} vs. exact)`
+        : "";
+      $("exactRow").classList.add("muted");
+      $("roundRow").classList.remove("muted");
+    } else {
+      $("heroAmt").textContent = money.format(exact);
+      $("heroNote").textContent = "";
+      $("exactRow").classList.remove("muted");
+      $("roundRow").classList.add("muted");
+    }
+  }
+
+  tipBtns.forEach(btn => btn.addEventListener("click", () => {
+    tipPct = Number(btn.dataset.tip);
+    usingCustom = false;
+    customTip.value = "";
+    $("customWrap").classList.remove("active");
+    tipBtns.forEach(b => b.setAttribute("aria-pressed", String(b === btn)));
+    update();
+  }));
+
+  customTip.addEventListener("input", () => {
+    usingCustom = customTip.value.trim() !== "";
+    $("customWrap").classList.toggle("active", usingCustom);
+    tipBtns.forEach(b => b.setAttribute("aria-pressed", String(!usingCustom && Number(b.dataset.tip) === tipPct)));
+    update();
+  });
+
+  people.addEventListener("input", update);
+  people.addEventListener("blur", () => { people.value = getPeople(); update(); });
+  $("minus").addEventListener("click", () => { people.value = Math.max(1, getPeople() - 1); update(); });
+  $("plus").addEventListener("click", () => { people.value = getPeople() + 1; update(); });
+
+  bill.addEventListener("input", update);
+  round.addEventListener("change", update);
+
+  document.querySelectorAll(".swatch").forEach(sw => sw.addEventListener("click", () => {
+    $("card").style.setProperty("--card", sw.dataset.color);
+    document.querySelectorAll(".swatch").forEach(s => s.setAttribute("aria-pressed", String(s === sw)));
+  }));
+
+  update();
+</script>
+</body>
+</html>
