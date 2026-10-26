@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Classroom apps | Brimmer and May</title>
+<meta name="description" content="Interactive classroom apps for teachers to try and borrow.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #13283D; --ink-soft: #4A5B6C; --paper: #F3F6F8; --panel: #FFFFFF;
+    --line: #D5DDE4; --cobalt: #2F5BEA; --sun: #F5C842; --focus: #F5C842;
+    --csa: #2F5BEA; --csp: #1E8C6E;
+    --science: #1E8C6E; --tech: #2F5BEA; --math: #B4580F; --english: #8A3FB8; --music: #C2306A;
+    --accent: var(--cobalt);
+    color-scheme: light; box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #E8EEF3; --ink-soft: #A6B4C1; --paper: #0F1C29; --panel: #172838; --line: #2A3E51;
+      --cobalt: #7F9EFF; --csa: #7F9EFF; --csp: #4FC9A6;
+      --science: #4FC9A6; --tech: #7F9EFF; --math: #F0A35E; --english: #C79AF0; --music: #F27BA8;
+      color-scheme: dark;
+    }
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body { margin: 0; background: var(--paper); color: var(--ink);
+    font: 400 1.0625rem/1.6 "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif; }
+  a { color: inherit; }
+  a:focus-visible, button:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; border-radius: 6px; }
+  .wrap { max-width: 68rem; margin: 0 auto; padding: 0 1.5rem; }
+  .home { display: inline-block; margin-top: 1.5rem; font-weight: 700; color: var(--ink-soft); text-underline-offset: 4px; }
+  .hero { padding: 2.5rem 0 2.5rem; border-bottom: 2px solid var(--ink); }
+  .kicker { margin: 0 0 0.75rem; font-weight: 700; color: var(--accent); }
+  h1 { margin: 0; font-family: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif; font-weight: 800;
+    font-size: clamp(2.25rem, 6.5vw, 4.5rem); line-height: 0.98; letter-spacing: -0.03em; max-width: 14ch; }
+  .lede { margin: 1.25rem 0 0; font-size: 1.2rem; max-width: 46ch; color: var(--ink-soft); }
+  main section { padding: 2.5rem 0; }
+  h2 { font-family: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif; font-weight: 800;
+    font-size: clamp(1.5rem, 3vw, 2rem); letter-spacing: -0.02em; margin: 0 0 1.25rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr)); gap: 1.25rem; }
+  .card { display: grid; grid-template-rows: auto auto 1fr auto; gap: 0.6rem; padding: 1.5rem;
+    background: var(--panel); border: 2px solid var(--line); border-left: 10px solid var(--c, var(--accent));
+    border-radius: 4px 14px 14px 4px; text-decoration: none; transition: border-color 0.15s; }
+  .card:hover { border-color: var(--c, var(--accent)); }
+  .card .tag { font-weight: 700; font-size: 0.95rem; color: var(--c, var(--accent)); }
+  .card h3 { margin: 0; font-family: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif; font-weight: 800;
+    font-size: 1.4rem; line-height: 1.15; }
+  .card p { margin: 0; color: var(--ink-soft); }
+  .go { font-weight: 700; color: var(--c, var(--accent)); text-decoration: underline; text-underline-offset: 4px; }
+  .soon { margin: 1.5rem 0 0; color: var(--ink-soft); }
+  .filters { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0 0 1.5rem; padding: 0; list-style: none; }
+  .filters button { font: inherit; font-weight: 700; padding: 0.45rem 1rem; border-radius: 999px; cursor: pointer;
+    background: transparent; color: var(--ink); border: 2px solid var(--line); }
+  .filters button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .count { margin: 0 0 1rem; color: var(--ink-soft); }
+  [hidden] { display: none !important; }
+  footer { padding: 2rem 0 3rem; color: var(--ink-soft); font-size: 0.95rem; border-top: 1px solid var(--line); }
+  footer p { margin: 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="home" href="https://brimmer-tech.github.io/">Back to home</a>
+  <header class="hero">
+    <p class="kicker">For teachers</p>
+    <h1>Classroom apps</h1>
+    <p class="lede">Interactive apps built for classes across the school. Try them out, borrow what’s useful, and share feedback with Mr. Ware.</p>
+  </header>
+  <main>
+    <section aria-labelledby="apps">
+      <h2 id="apps">Browse by subject</h2>
+      <ul class="filters" aria-label="Filter apps by subject">
+      <li><button type="button" data-filter="all" aria-pressed="true">All</button></li>
+      <li><button type="button" data-filter="science" aria-pressed="false">Science</button></li>
+      <li><button type="button" data-filter="tech" aria-pressed="false">Technology</button></li>
+      <li><button type="button" data-filter="math" aria-pressed="false">Math</button></li>
+      <li><button type="button" data-filter="english" aria-pressed="false">English</button></li>
+      <li><button type="button" data-filter="music" aria-pressed="false">Music</button></li>
+      </ul>
+      <p class="count" aria-live="polite"></p>
+      <div class="grid">
+      <a class="card" style="--c: var(--science)" data-cat="science" href="https://brimmer-tech.github.io/artifacts/bioglow.html">
+        <span class="tag">Science, AP Biology</span>
+        <h3>BioGlow Lab Suite</h3>
+        <p>Step through a bacterial transformation lab: run the heat-shock protocol, induce eGFP expression, and calculate transformation efficiency.</p>
+        <span class="go">Open</span>
+      </a>
+      <a class="card" style="--c: var(--science)" data-cat="science" href="https://brimmer-tech.github.io/artifacts/outbreak_simulation.html">
+        <span class="tag">Science, biology</span>
+        <h3>Outbreak Simulation</h3>
+        <p>Model how a virus spreads through a population and see how changing conditions shapes the outbreak.</p>
+        <span class="go">Open</span>
+      </a>
+      <a class="card" style="--c: var(--science)" data-cat="science" href="https://brimmer-tech.github.io/artifacts/rainforest_field_station.html">
+        <span class="tag">Science, middle school</span>
+        <h3>Rainforest Field Station</h3>
+        <p>Explore an interactive rainforest ecosystem, built for middle school students.</p>
+        <span class="go">Open</span>
+      </a>
+      <a class="card" style="--c: var(--science)" data-cat="science" href="https://brimmer-tech.github.io/artifacts/reef_tank_3D.html">
+        <span class="tag">Science, ecosystems</span>
+        <h3>3D Reef Tank</h3>
+        <p>Run a virtual reef tank. Adjust the tank’s settings and keep the fish alive.</p>
+        <span class="go">Open</span>
+      </a>
+      <a class="card" style="--c: var(--tech)" data-cat="tech" href="https://brimmer-tech.github.io/artifacts/aquarium.html">
+        <span class="tag">Technology, Tech 9</span>
+        <h3>Digital Aquarium</h3>
+        <p>The aquarium project built in Technology 9.</p>
+        <span class="go">Open</span>
+      </a>
+      <a class="card" style="--c: var(--tech)" data-cat="tech" href="https://brimmer-tech.github.io/artifacts/robotics_lab.html">
+        <span class="tag">Technology, engineering</span>
+        <h3>Robotics Lab</h3>
+        <p>An interactive introduction to robotics.</p>
+        <span class="go">Open</span>
+      </a>
+      <a class="card" style="--c: var(--tech)" data-cat="tech" href="https://brimmer-tech.github.io/artifacts/circuit_simulator.html">
+        <span class="tag">Technology, electronics</span>
+        <h3>Circuit Simulator</h3>
+        <p>Build simple circuits and see how they behave.</p>
+        <span class="go">Open</span>
+      </a>
+      <a class="card" style="--c: var(--tech)" data-cat="tech" href="https://brimmer-tech.github.io/artifacts/fractal_tree_lab.html">
+        <span class="tag">Technology, coding and math</span>
+        <h3>Fractal Tree Lab</h3>
+        <p>Grow fractal trees, adjust them with sliders, and see the Python code that draws them.</p>
+        <span class="go">Open</span>
+      </a>
+      <a class="card" style="--c: var(--math)" data-cat="math" href="https://brimmer-tech.github.io/artifacts/visual_problem_solver.html">
+        <span class="tag">Math, graphing</span>
+        <h3>Visual Problem Solver</h3>
+        <p>Graph math formulas and see how they change.</p>
+        <span class="go">Open</span>
+      </a>
+      <a class="card" style="--c: var(--math)" data-cat="math" href="https://brimmer-tech.github.io/artifacts/tip_calculator.html">
+        <span class="tag">Math, everyday math</span>
+        <h3>Tip Calculator</h3>
+        <p>Work out tips and split a bill.</p>
+        <span class="go">Open</span>
+      </a>
+      <a class="card" style="--c: var(--english)" data-cat="english" href="https://brimmer-tech.github.io/artifacts/oryx_crake.html">
+        <span class="tag">English, literature</span>
+        <h3>Oryx and Crake Study Resource</h3>
+        <p>A study companion for Margaret Atwood’s novel.</p>
+        <span class="go">Open</span>
+      </a>
+      <a class="card" style="--c: var(--music)" data-cat="music" href="https://brimmer-tech.github.io/artifacts/drum_machine.html">
+        <span class="tag">Music, beat making</span>
+        <h3>Drum Machine</h3>
+        <p>Make beats on a digital drum machine, with a built-in tutorial.</p>
+        <span class="go">Open</span>
+      </a>
+      </div>
+    </section>
+  </main>
+  <footer><p>Maintained by Mr. Ware, Brimmer and May Computer Science.</p></footer>
+</div>
+<script>
+  const buttons = document.querySelectorAll("[data-filter]");
+  const cards = document.querySelectorAll(".card[data-cat]");
+  const count = document.querySelector(".count");
+  const names = { all: "", science: " in Science", tech: " in Technology", math: " in Math", english: " in English", music: " in Music" };
+  function show(cat) {
+    let n = 0;
+    cards.forEach(c => { const on = cat === "all" || c.dataset.cat === cat; c.hidden = !on; if (on) n++; });
+    buttons.forEach(b => b.setAttribute("aria-pressed", b.dataset.filter === cat));
+    count.textContent = n + (n === 1 ? " app" : " apps") + names[cat];
+    try { history.replaceState(null, "", cat === "all" ? location.pathname : "#" + cat); } catch (e) {}
+  }
+  buttons.forEach(b => b.addEventListener("click", () => show(b.dataset.filter)));
+  const start = location.hash.slice(1);
+  show(names.hasOwnProperty(start) ? start : "all");
+</script>
+</body>
+</html>
