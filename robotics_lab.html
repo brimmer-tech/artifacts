@@ -51,6 +51,8 @@ p{margin:0 0 10px}
 :root .chip.on{color:#14213d;border-color:#14213d}
 .arr{color:var(--muted);font-size:20px}
 .cap{color:var(--muted);font-size:15px;margin-top:8px;min-height:1.5em}
+.toprow{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.btn[aria-pressed="true"]{background:var(--warn);color:#14213d;border-color:#14213d}
 .tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:2px solid var(--line);margin-top:22px}
 .tab{font-family:var(--display);font-size:16px;font-weight:600;background:none;border:none;padding:10px 16px;color:var(--muted);border-bottom:4px solid transparent;margin-bottom:-2px;cursor:pointer;white-space:nowrap}
 .tab:hover{color:var(--ink)}
@@ -130,10 +132,13 @@ details .q{display:block;font-family:var(--sans);font-weight:400;font-size:16px;
   <header>
     <h1>Robotics Lab: Sense, Think, Act</h1>
     <p class="lede">Every robot, from a robot vacuum to a Mars rover, runs the same loop over and over. It <b>senses</b> the world, <b>thinks</b> about what it sensed, then <b>acts</b>. Work through the four stations to build that loop one piece at a time.</p>
+    <div class="toprow">
     <div class="loop" aria-label="The robot loop">
       <span class="chip" data-c="sense">Sense</span><span class="arr" aria-hidden="true">→</span>
       <span class="chip" data-c="think">Think</span><span class="arr" aria-hidden="true">→</span>
       <span class="chip" data-c="act">Act</span><span class="arr" aria-hidden="true">↺</span>
+    </div>
+    <button class="btn" id="soundBtn" aria-pressed="false" style="margin-top:16px">🔈 Sound off</button>
     </div>
     <p class="cap" id="loopCap"></p>
   </header>
@@ -198,6 +203,7 @@ details .q{display:block;font-family:var(--sans);font-weight:400;font-size:16px;
     <div class="intro">
       <h2>Turning the world into numbers</h2>
       <p>A robot can’t see the room the way you do. Each of its three distance sensors (like the ultrasonic or infrared sensors on real robots) reports a single number: how far away the nearest thing is in that direction. The bump sensor reports only yes or no.</p>
+      <p>When any distance sensor reads under 15 cm, the robot turns red. With sound on, it also beeps faster the closer it gets, like a car’s parking sensor.</p>
     </div>
     <div class="grid">
       <div class="stage">
@@ -432,7 +438,7 @@ function drawRobot(ctx, rb, arrows = false){
   };
   wheel(-B / 2, l); wheel(B / 2, r);
   ctx.beginPath(); ctx.arc(0, 0, 12.5, 0, Math.PI * 2);
-  ctx.fillStyle = C.warn; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = '#14213d'; ctx.stroke();
+  ctx.fillStyle = rb.close ? '#e5383b' : C.warn; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = '#14213d'; ctx.stroke();
   ctx.beginPath(); ctx.moveTo(11, 0); ctx.lineTo(2, -6); ctx.lineTo(2, 6); ctx.closePath();
   ctx.fillStyle = '#14213d'; ctx.fill();
   ctx.restore();
@@ -600,7 +606,7 @@ const th = {cv:canvasOf('cvThink'), rb:newRobot(TH_START.x, TH_START.y, -Math.PI
   obs:[{x:120,y:70,w:90,h:40},{x:250,y:180,w:40,h:150},{x:360,y:60,w:40,h:120},{x:420,y:260,w:110,h:40},{x:500,y:100,w:40,h:80},{x:70,y:200,w:80,h:30}],
   running:false, mode:'drive', timer:0, dir:1, rule:'else', hits:0, wasHit:false, bumped:false, dist:0, time:0, read:[160,160,160], codeKey:''};
 const ACT_TXT = {left:'spin left until the path is clear', right:'spin right until the path is clear', open:'spin toward the more open side until clear', back:'back up, then turn toward the more open side', random:'spin a random direction until clear'};
-function thReset(){ resetRobot(th.rb); Object.assign(th, {mode:'drive', timer:0, rule:'else', hits:0, wasHit:false, bumped:false, dist:0, time:0}); }
+function thReset(){ resetRobot(th.rb); Object.assign(th, {read:[160,160,160], mode:'drive', timer:0, rule:'else', hits:0, wasHit:false, bumped:false, dist:0, time:0}); }
 function shuffleRoom(){
   let tries = 0; const obs = [];
   while (obs.length < 6 && tries++ < 2000){
@@ -812,6 +818,71 @@ const TABS = {
   think:{focus:['sense','think','act'], cap:'Station 3 closes the loop: sensor readings go into a program that chooses the motor commands.', u:thUpdate, d:thDraw},
   control:{focus:['sense','think','act'], cap:'Station 4 runs the whole loop fast enough to make constant small corrections. That’s feedback control.', u:ctUpdate, d:ctDraw}
 };
+/* ---------- proximity + sound ---------- */
+const CLOSE = 30; // px = 15 cm
+const wallRays = rb => SN_ANG.map(a => ray(rb.x, rb.y, rb.th + a, [], SN_MAX));
+const pw = rb => (Math.abs(rb.al) + Math.abs(rb.ar)) / 2;
+Object.assign(TABS.move, {rb:mv.rb, reads:() => wallRays(mv.rb), live:() => true});
+Object.assign(TABS.sense, {rb:sn.rb, reads:() => sn.shown, live:() => true});
+Object.assign(TABS.think, {rb:th.rb, reads:() => th.read, live:() => th.running});
+Object.assign(TABS.control, {rb:ct.rb, reads:() => wallRays(ct.rb), live:() => ct.running});
+
+const audio = {ctx:null, on:false, beepT:0};
+function audioInit(){
+  const A = window.AudioContext || window.webkitAudioContext; if (!A) return false;
+  const ac = new A(); audio.ctx = ac;
+  const master = ac.createGain(); master.gain.value = .5; master.connect(ac.destination);
+  // engine rumble: two slightly detuned low oscillators through a resonant low-pass filter
+  const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 250; lp.Q.value = 5;
+  const motorGain = ac.createGain(); motorGain.gain.value = 0;
+  const o1 = ac.createOscillator(); o1.type = 'sawtooth'; o1.frequency.value = 40;
+  const o2 = ac.createOscillator(); o2.type = 'square'; o2.frequency.value = 40.6;
+  const o2g = ac.createGain(); o2g.gain.value = .4;
+  o1.connect(lp); o2.connect(o2g); o2g.connect(lp); lp.connect(motorGain); motorGain.connect(master);
+  // chug: wobble the filter so it sounds like a working engine
+  const lfo = ac.createOscillator(); lfo.frequency.value = 7; const lfoG = ac.createGain(); lfoG.gain.value = 90;
+  lfo.connect(lfoG); lfoG.connect(lp.frequency);
+  // electric motor whine on top
+  const wh = ac.createOscillator(); wh.type = 'triangle'; wh.frequency.value = 260;
+  const whG = ac.createGain(); whG.gain.value = 0; wh.connect(whG); whG.connect(master);
+  [o1, o2, lfo, wh].forEach(o => o.start());
+  Object.assign(audio, {master, lp, motorGain, o1, o2, lfo, wh, whG});
+  return true;
+}
+function beep(){
+  const ac = audio.ctx, t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
+  o.type = 'square'; o.frequency.value = 1250;
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.12, t + .005);
+  g.gain.setValueAtTime(.12, t + .06); g.gain.linearRampToValueAtTime(0, t + .075);
+  o.connect(g); g.connect(audio.master); o.start(t); o.stop(t + .09);
+}
+function audioUpdate(dt, power, near){
+  if (!audio.on || !audio.ctx) return;
+  const t = audio.ctx.currentTime, p = clamp(power / 100, 0, 1);
+  audio.o1.frequency.setTargetAtTime(38 + p * 70, t, .08);
+  audio.o2.frequency.setTargetAtTime(38.6 + p * 71, t, .08);
+  audio.lfo.frequency.setTargetAtTime(6 + p * 14, t, .1);
+  audio.lp.frequency.setTargetAtTime(220 + p * 700, t, .08);
+  audio.motorGain.gain.setTargetAtTime(p > .02 ? .05 + p * .17 : 0, t, .1);
+  audio.wh.frequency.setTargetAtTime(260 + p * 520, t, .08);
+  audio.whG.gain.setTargetAtTime(p * .025, t, .1);
+  if (near < CLOSE){
+    audio.beepT -= dt;
+    if (audio.beepT <= 0){ beep(); audio.beepT = .09 + .5 * clamp(near / CLOSE, 0, 1); }
+  } else audio.beepT = 0;
+}
+$('soundBtn').addEventListener('click', () => {
+  if (!audio.ctx && !audioInit()){ $('soundBtn').textContent = 'Sound not supported'; return; }
+  audio.on = !audio.on;
+  if (audio.on) audio.ctx.resume(); else audio.ctx.suspend();
+  $('soundBtn').setAttribute('aria-pressed', audio.on);
+  $('soundBtn').textContent = audio.on ? '🔊 Sound on' : '🔈 Sound off';
+});
+document.addEventListener('visibilitychange', () => {
+  if (!audio.ctx) return;
+  if (document.hidden) audio.ctx.suspend(); else if (audio.on) audio.ctx.resume();
+});
+
 let active = 'move';
 function show(name){
   if (!TABS[name]) name = 'move';
@@ -831,6 +902,9 @@ function frame(t){
   const dt = Math.min(.05, (t - lastT) / 1000); lastT = t; acc += dt;
   const tab = TABS[active];
   while (acc >= DT){ tab.u(DT); acc -= DT; }
+  const near = Math.min(...tab.reads());
+  tab.rb.close = near < CLOSE;
+  audioUpdate(dt, tab.live() ? pw(tab.rb) : 0, tab.live() ? near : Infinity);
   tab.d();
   requestAnimationFrame(frame);
 }
