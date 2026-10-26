@@ -61,6 +61,19 @@
   [hidden] { display: none !important; }
   footer { padding: 2rem 0 3rem; color: var(--ink-soft); font-size: 0.95rem; border-top: 1px solid var(--line); }
   footer p { margin: 0; }
+  .gate { margin: 2.5rem 0; padding: 2rem; max-width: 30rem; background: var(--panel);
+    border: 2px solid var(--line); border-radius: 14px; }
+  .gate h2 { margin-bottom: 0.5rem; }
+  .gate p { margin: 0 0 1.25rem; color: var(--ink-soft); }
+  .gate label { display: block; font-weight: 700; margin-bottom: 0.4rem; }
+  .gate-row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+  .gate input { font: inherit; font-size: 1.25rem; letter-spacing: 0.2em; width: 9rem; padding: 0.6rem 0.8rem;
+    border: 2px solid var(--line); border-radius: 10px; background: var(--paper); color: var(--ink); }
+  .gate input:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .gate button { font: inherit; font-weight: 700; padding: 0.6rem 1.3rem; border: 0; border-radius: 10px;
+    background: var(--ink); color: var(--paper); cursor: pointer; }
+  .gate button:hover { background: var(--cobalt); }
+  .gate .error { margin: 0.9rem 0 0; color: var(--music); font-weight: 700; min-height: 1.6em; }
 </style>
 </head>
 <body>
@@ -71,7 +84,17 @@
     <h1>Classroom apps</h1>
     <p class="lede">Interactive apps built for classes across the school. Try them out, borrow what’s useful, and share feedback with Mr. Ware.</p>
   </header>
-  <main>
+  <form class="gate" id="gate" autocomplete="off">
+    <h2>Teachers only</h2>
+    <p>Enter the teacher code to see the apps.</p>
+    <label for="code">Teacher code</label>
+    <div class="gate-row">
+      <input id="code" type="password" inputmode="numeric" maxlength="12" required>
+      <button type="submit">Enter</button>
+    </div>
+    <p class="error" id="gate-error" aria-live="polite"></p>
+  </form>
+  <main id="content" hidden>
     <section aria-labelledby="apps">
       <h2 id="apps">Browse by subject</h2>
       <ul class="filters" aria-label="Filter apps by subject">
@@ -173,6 +196,25 @@
   </main>
   <footer><p>Maintained by Mr. Ware, Brimmer and May Computer Science.</p></footer>
 </div>
+<script>
+  // Simple teacher code. This only keeps casual visitors out; it is not real security.
+  const TEACHER_CODE = "1963";
+  const gate = document.getElementById("gate");
+  const content = document.getElementById("content");
+  function unlock() { gate.hidden = true; content.hidden = false; }
+  try { if (sessionStorage.getItem("teacher-ok") === "yes") unlock(); } catch (e) {}
+  gate.addEventListener("submit", ev => {
+    ev.preventDefault();
+    const input = document.getElementById("code");
+    if (input.value.trim() === TEACHER_CODE) {
+      try { sessionStorage.setItem("teacher-ok", "yes"); } catch (e) {}
+      unlock();
+    } else {
+      document.getElementById("gate-error").textContent = "That code isn’t right. Try again.";
+      input.value = ""; input.focus();
+    }
+  });
+</script>
 <script>
   const buttons = document.querySelectorAll("[data-filter]");
   const cards = document.querySelectorAll(".card[data-cat]");
