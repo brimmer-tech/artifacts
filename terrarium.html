@@ -56,7 +56,9 @@ button,input,select{font:inherit;color:inherit}
 
 /* Layout */
 .builder{display:flex;flex-direction:column;height:100vh;height:100svh;min-height:620px}
-.app{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 376px}
+.app{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 376px;width:100%;max-width:1480px;margin:0 auto}
+.bar{padding-inline:max(16px,calc((100% - 1480px)/2 + 16px))}
+@media (min-width:1481px){.app{border-left:1px solid var(--line);border-right:1px solid var(--line)}}
 .stage{position:relative;min-height:0;overflow:hidden;background:#cdd8d0}
 #cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}
 #cv:focus-visible{box-shadow:inset 0 0 0 3px var(--accent)}
@@ -463,7 +465,7 @@ input[type=checkbox]{accent-color:var(--accent);width:18px;height:18px;margin:0}
 (()=>{
 "use strict";
 const $=s=>document.querySelector(s);
-const W=1000,H=900,VY=90,BASE=780,CX=500,TAU=Math.PI*2;
+const W=1000,H=860,VY=90,BASE=780,CX=500,TAU=Math.PI*2;
 const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const rnd=Math.random;
 function rng(seed){let a=seed>>>0;return()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
@@ -566,13 +568,13 @@ function buildVessel(v,yw=0){
       p.lineTo(CX+nw/2,top-nh);p.lineTo(CX-nw/2,top-nh);p.lineTo(CX-nw/2,top);p.quadraticCurveTo(x0,top,x0,top+r2);p.lineTo(x0,BASE-r1);p.quadraticCurveTo(x0,BASE,x0+r1,BASE);p.closePath();
       o.b={l:x0,r:x1,t:top-nh,b:BASE};o.rim={x:CX,y:top-nh,w:nw+14};break}
     case'wardian':{const ww=540*sw,hh=330*sh,rh=150*sh,hw=ww/2,hd=ww*.31,top=BASE-hh;
-      const C=[[-hw,-hd],[hw,-hd],[hw,hd],[-hw,hd]],bs=C.map(([X,Z])=>P3(X,Z,BASE)),es=C.map(([X,Z])=>P3(X,Z,top)),r0=P3(-hw,0,top-rh),r1=P3(hw,0,top-rh);
+      const C=[[-hw,-hd],[hw,-hd],[hw,hd],[-hw,hd]],bs=C.map(([X,Z])=>P3(X,Z,BASE)),es=C.map(([X,Z])=>P3(X,Z,top)),r0=P3(0,-hd,top-rh),r1=P3(0,hd,top-rh);
       const L=Math.min(...es.map(q=>q.x)),R=Math.max(...es.map(q=>q.x)),rl=Math.min(r0.x,r1.x),rr=Math.max(r0.x,r1.x);
       p.moveTo(L,BASE);p.lineTo(L,top);p.lineTo(rl,top-rh);p.lineTo(rr,top-rh);p.lineTo(R,top);p.lineTo(R,BASE);p.closePath();
       o.b={l:L,r:R,t:top-rh,b:BASE};o.tray=true;o.knob={x:(r0.x+r1.x)/2,y:top-rh,finial:true};
       const E=[];for(let i=0;i<4;i++){const j=(i+1)%4;E.push([bs[i],bs[j]],[es[i],es[j]],[bs[i],es[i]])}
-      E.push([r0,r1],[es[0],r0],[es[3],r0],[es[1],r1],[es[2],r1]);
-      for(const Z of[-hd,hd]){for(const X of[-hw/3,hw/3])E.push([P3(X,Z,BASE),P3(X,Z,top)]);E.push([P3(0,Z,top),P3(0,0,top-rh)])}
+      E.push([r0,r1],[es[0],r0],[es[1],r0],[es[2],r1],[es[3],r1]);
+      for(const Z of[-hd,hd]){for(const X of[-hw/3,hw/3])E.push([P3(X,Z,BASE),P3(X,Z,top)]);E.push([P3(0,Z,top),P3(0,Z,top-rh)])}
       setEdges(o,E,es);break}
     case'carboy':{const ww=470*sw,bh=420*sh,nw=96,nh=100*sh,x0=CX-ww/2,x1=CX+ww/2,bt=BASE-bh;
       p.moveTo(CX-nw/2,bt-nh);p.lineTo(CX-nw/2,bt);p.bezierCurveTo(CX-nw/2-30,bt+24,x0,bt+bh*.1,x0,bt+bh*.42);p.lineTo(x0,BASE-50);p.quadraticCurveTo(x0,BASE,x0+50,BASE);
@@ -619,7 +621,7 @@ function proj(e){const cs=Math.cos(yaw),sn=Math.sin(yaw),X=e.x-CX,Z=e.z||0,sx=X*
 function setScreen(e,nx,ny){const cs=Math.cos(yaw),sn=Math.sin(yaw),sz=proj(e).sz,sx=nx-CX;e.x=CX+sx*cs+sz*sn;e.z=-sx*sn+sz*cs;clampEl(e);if(ny!==undefined)e.h=clamp(ny-surfaceY(proj(e).x),-420,60)}
 function setDepth(e,sz){const cs=Math.cos(yaw),sn=Math.sin(yaw),sx=proj(e).x-CX;e.x=CX+sx*cs+sz*sn;e.z=-sx*sn+sz*cs;clampEl(e)}
 function drawList(){return state.elements.map((e,i)=>{const q=proj(e);q.i=i;return q}).sort((a,b)=>a.sz-b.sz||a.i-b.i)}
-const TY=480;
+const TY=465;
 function topPos(e){const cs=Math.cos(yaw),sn=Math.sin(yaw),X=e.x-CX,Z=e.z||0;return{x:CX+X*cs-Z*sn,y:TY+X*sn+Z*cs}}
 function fromTop(px,py){const cs=Math.cos(yaw),sn=Math.sin(yaw),sx=px-CX,sz=py-TY;return{X:sx*cs+sz*sn,Z:-sx*sn+sz*cs}}
 const topR=e=>clamp(PLANTS[e.type].w*e.s*.3,10,130);
@@ -949,7 +951,7 @@ function renderTop(c,cw,ch,pr,opts){const vs=Math.min(cw/W,ch/(H-VY)),ox=(cw-W*v
   c.lineJoin='round';c.lineWidth=12;c.strokeStyle=rgba(tint,.45);c.stroke(F.outer);c.lineWidth=2;c.strokeStyle='rgba(255,255,255,.75)';c.stroke(F.outer);
   if(!ROUND(t)){c.lineWidth=5;c.strokeStyle=fin;c.stroke(F.outer);c.lineWidth=3;c.beginPath();
     if(t==='faceted'){for(let i=0;i<6;i++){const a=i*Math.PI/3,X=FP.half*Math.cos(a),Z=FP.half*Math.sin(a);c.moveTo(CX,TY);c.lineTo(CX+X*cs-Z*sn,TY+X*sn+Z*cs)}}
-    else{const hw=270*state.vessel.w;c.moveTo(CX-hw*cs,TY-hw*sn);c.lineTo(CX+hw*cs,TY+hw*sn)}c.stroke()}
+    else{const hd=167*state.vessel.w;c.moveTo(CX+hd*sn,TY-hd*cs);c.lineTo(CX-hd*sn,TY+hd*cs)}c.stroke()}
   if(G.rim){c.setLineDash([8,6]);c.lineWidth=2;c.strokeStyle='rgba(255,255,255,.75)';c.beginPath();c.arc(CX,TY,G.rim.w/2,0,TAU);c.stroke();c.setLineDash([])}
   if(opts.ui&&sel){const o=list.find(o=>o.e===sel);if(o){c.setLineDash([6/vs,5/vs]);c.lineWidth=2/vs;c.strokeStyle='#ffffff';c.beginPath();c.arc(o.x,o.y,o.r+6,0,TAU);c.stroke();c.setLineDash([])}}
   const fy=TY+F.ext+30;c.fillStyle='rgba(255,248,235,.95)';c.beginPath();c.moveTo(CX,fy-10);c.lineTo(CX-9,fy+2);c.lineTo(CX+9,fy+2);c.closePath();c.fill();
