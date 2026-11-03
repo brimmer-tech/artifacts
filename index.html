@@ -3,199 +3,291 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Classroom apps | Brimmer and May</title>
+<title>Classroom apps | MR. WARE | TECH TEACHER</title>
 <meta name="description" content="Interactive classroom apps for teachers to try and borrow.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Kalam:wght@700&family=Lilita+One&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --ink: #13283D; --ink-soft: #4A5B6C; --paper: #F3F6F8; --panel: #FFFFFF;
-    --line: #D5DDE4; --cobalt: #2F5BEA; --sun: #F5C842; --focus: #F5C842;
-    --csa: #2F5BEA; --csp: #1E8C6E;
-    --science: #1E8C6E; --tech: #2F5BEA; --math: #B4580F; --english: #8A3FB8; --music: #C2306A;
-    --accent: var(--cobalt);
-    color-scheme: light; box-sizing: border-box;
-    padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+    --paper: #FCF1DE;
+    --panel: #FFFCF5;
+    --ink: #2B2A33;
+    --ink-soft: #5A5663;
+    --orange: #EC7A1C;
+    --yellow: #F7C326;
+    --blue: #2B5FCC;
+    --purple: #6E3FA3;
+    --green: #3D9A4A;
+    --red: #D9452B;
+    --focus: #2B5FCC;
+    /* subject colors: border, and a darker version for text */
+    --science: var(--green);  --science-t: #2E7A38;
+    --tech: var(--blue);      --tech-t: #2B5FCC;
+    --math: var(--orange);    --math-t: #A44F0C;
+    --english: var(--purple); --english-t: #6E3FA3;
+    --music: var(--red);      --music-t: #B5361F;
+    color-scheme: light;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --ink: #E8EEF3; --ink-soft: #A6B4C1; --paper: #0F1C29; --panel: #172838; --line: #2A3E51;
-      --cobalt: #7F9EFF; --csa: #7F9EFF; --csp: #4FC9A6;
-      --science: #4FC9A6; --tech: #7F9EFF; --math: #F0A35E; --english: #C79AF0; --music: #F27BA8;
+      --paper: #221F2B;
+      --panel: #2D2938;
+      --ink: #F6EFE2;
+      --ink-soft: #C9C1D3;
+      --orange: #F59A4C;
+      --yellow: #F7C944;
+      --blue: #82A4FF;
+      --purple: #B78BEA;
+      --green: #6CC97A;
+      --red: #F27A62;
+      --focus: #F7C944;
+      --science-t: var(--green); --tech-t: var(--blue); --math-t: var(--orange);
+      --english-t: var(--purple); --music-t: var(--red);
       color-scheme: dark;
     }
   }
   *, *::before, *::after { box-sizing: inherit; }
   html { scroll-padding-top: env(safe-area-inset-top, 0px); }
-  body { margin: 0; background: var(--paper); color: var(--ink);
-    font: 400 1.0625rem/1.6 "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: 400 1.0625rem/1.6 "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  }
   a { color: inherit; }
-  a:focus-visible, button:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; border-radius: 6px; }
-  .wrap { max-width: 68rem; margin: 0 auto; padding: 0 1.5rem; }
-  .home { display: inline-block; margin-top: 1.5rem; font-weight: 700; color: var(--ink-soft); text-underline-offset: 4px; }
-  .hero { padding: 2.5rem 0 2.5rem; border-bottom: 2px solid var(--ink); }
-  .kicker { margin: 0 0 0.75rem; font-weight: 700; color: var(--accent); }
-  h1 { margin: 0; font-family: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif; font-weight: 800;
-    font-size: clamp(2.25rem, 6.5vw, 4.5rem); line-height: 0.98; letter-spacing: -0.03em; max-width: 14ch; }
-  .lede { margin: 1.25rem 0 0; font-size: 1.2rem; max-width: 46ch; color: var(--ink-soft); }
-  main section { padding: 2.5rem 0; }
-  h2 { font-family: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif; font-weight: 800;
-    font-size: clamp(1.5rem, 3vw, 2rem); letter-spacing: -0.02em; margin: 0 0 1.25rem; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr)); gap: 1.25rem; }
-  .card { display: grid; grid-template-rows: auto auto 1fr auto; gap: 0.6rem; padding: 1.5rem;
-    background: var(--panel); border: 2px solid var(--line); border-left: 10px solid var(--c, var(--accent));
-    border-radius: 4px 14px 14px 4px; text-decoration: none; transition: border-color 0.15s; }
-  .card:hover { border-color: var(--c, var(--accent)); }
-  .card .tag { font-weight: 700; font-size: 0.95rem; color: var(--c, var(--accent)); }
-  .card h3 { margin: 0; font-family: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif; font-weight: 800;
-    font-size: 1.4rem; line-height: 1.15; }
-  .card p { margin: 0; color: var(--ink-soft); }
-  .go { font-weight: 700; color: var(--c, var(--accent)); text-decoration: underline; text-underline-offset: 4px; }
-  .soon { margin: 1.5rem 0 0; color: var(--ink-soft); }
-  .filters { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0 0 1.5rem; padding: 0; list-style: none; }
-  .filters button { font: inherit; font-weight: 700; padding: 0.45rem 1rem; border-radius: 999px; cursor: pointer;
-    background: transparent; color: var(--ink); border: 2px solid var(--line); }
-  .filters button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-  .count { margin: 0 0 1rem; color: var(--ink-soft); }
+  a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; border-radius: 10px; }
+  h1, h2, h3 { font-family: "Lilita One", "Arial Black", "Helvetica Neue", Impact, sans-serif; font-weight: 400; letter-spacing: 0.01em; }
+  .wrap { max-width: 70rem; margin: 0 auto; padding: 0 1.5rem; }
   [hidden] { display: none !important; }
-  footer { padding: 2rem 0 3rem; color: var(--ink-soft); font-size: 0.95rem; border-top: 1px solid var(--line); }
-  footer p { margin: 0; }
-  .gate { margin: 2.5rem 0; padding: 2rem; max-width: 30rem; background: var(--panel);
-    border: 2px solid var(--line); border-radius: 14px; }
-  .gate h2 { margin-bottom: 0.5rem; }
-  .gate p { margin: 0 0 1.25rem; color: var(--ink-soft); }
+
+  /* Hand-drawn edge on a pseudo-element so text stays crisp */
+  .sketch { position: relative; isolation: isolate; }
+  .sketch::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--fill, var(--panel));
+    border: 3px solid var(--c, var(--ink));
+    border-radius: 22px 12px 24px 10px / 12px 24px 10px 22px;
+    filter: url(#rough);
+  }
+  .doodle { filter: url(#rough); }
+
+  .home { display: inline-block; margin-top: 1.5rem; font-weight: 700; color: var(--ink-soft); text-decoration-thickness: 2px; text-underline-offset: 5px; }
+
+  .hero { padding: 2rem 0 1rem; }
+  .kicker { margin: 0 0 0.25rem; font-weight: 700; color: var(--ink-soft); font-size: 1.1rem; }
+  h1 { margin: 0; font-size: clamp(2.6rem, 6.5vw, 4.75rem); line-height: 1.02; }
+  .squiggle { display: block; width: min(100%, 30rem); height: auto; margin: 0.4rem 0 0; }
+  .lede { margin: 1rem 0 0; font-size: clamp(1.25rem, 2.2vw, 1.5rem); line-height: 1.45; font-weight: 700; max-width: 40ch; }
+
+  /* Code gate */
+  .gate { margin: 2.5rem 0 1rem; padding: 2rem 2.25rem; max-width: 32rem; --fill: var(--yellow); --c: #2B2A33; color: #2B2A33; transform: rotate(-0.6deg); }
+  .gate h2 { margin: 0 0 0.35rem; font-size: 2rem; line-height: 1.1; }
+  .gate p { margin: 0 0 1.25rem; }
   .gate label { display: block; font-weight: 700; margin-bottom: 0.4rem; }
   .gate-row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
-  .gate input { font: inherit; font-size: 1.25rem; letter-spacing: 0.2em; width: 9rem; padding: 0.6rem 0.8rem;
-    border: 2px solid var(--line); border-radius: 10px; background: var(--paper); color: var(--ink); }
-  .gate input:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
-  .gate button { font: inherit; font-weight: 700; padding: 0.6rem 1.3rem; border: 0; border-radius: 10px;
-    background: var(--ink); color: var(--paper); cursor: pointer; }
-  .gate button:hover { background: var(--cobalt); }
-  .gate .error { margin: 0.9rem 0 0; color: var(--music); font-weight: 700; min-height: 1.6em; }
+  .gate input {
+    font: inherit; font-size: 1.3rem; letter-spacing: 0.25em; width: 9.5rem; padding: 0.55rem 0.8rem;
+    border: 3px solid #2B2A33; border-radius: 12px 6px 14px 6px; background: #FFFCF5; color: #2B2A33;
+  }
+  .gate input:focus-visible { outline-color: #2B5FCC; }
+  .gate button {
+    font: inherit; font-weight: 700; padding: 0.6rem 1.4rem; border: 0; cursor: pointer;
+    border-radius: 14px 8px 16px 8px; background: #2B2A33; color: #FFFCF5;
+  }
+  .gate button:hover { background: #6E3FA3; }
+  .gate .error { margin: 0.9rem 0 0; font-weight: 700; color: #9E2A16; min-height: 1.6em; }
+
+  /* App list */
+  .apps { padding: 2rem 0 0; }
+  .apps h2 { margin: 0 0 1rem; font-size: clamp(2.1rem, 4.2vw, 3rem); line-height: 1.05; }
+  .filters { display: flex; flex-wrap: wrap; gap: 0.7rem; margin: 0 0 1rem; padding: 0; list-style: none; }
+  .chip {
+    font: 700 1.15rem/1 "Kalam", "Comic Sans MS", "Segoe Print", cursive;
+    padding: 0.6rem 1.1rem 0.45rem;
+    background: none; border: 0; color: var(--ink); cursor: pointer;
+    --fill: var(--panel); --c: var(--ink-soft);
+  }
+  .chip[aria-pressed="true"] { --fill: var(--ink); --c: var(--ink); color: var(--paper); }
+  .count { margin: 0 0 1.5rem; color: var(--ink-soft); font-weight: 700; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr)); gap: 1.6rem; }
+  .card {
+    display: grid;
+    grid-template-rows: auto auto 1fr auto;
+    gap: 0.45rem;
+    padding: 1.5rem 1.5rem 1.35rem;
+    text-decoration: none;
+    transition: transform 0.15s;
+  }
+  .card:nth-child(3n+1) { transform: rotate(-0.8deg); }
+  .card:nth-child(3n+2) { transform: rotate(0.5deg); }
+  .card:nth-child(3n) { transform: rotate(-0.3deg); }
+  .card:hover, .card:focus-visible { transform: rotate(0deg) translateY(-3px); }
+  .card.science { --c: var(--science); --t: var(--science-t); }
+  .card.tech    { --c: var(--tech);    --t: var(--tech-t); }
+  .card.math    { --c: var(--math);    --t: var(--math-t); }
+  .card.english { --c: var(--english); --t: var(--english-t); }
+  .card.music   { --c: var(--music);   --t: var(--music-t); }
+  .card .tag { font-weight: 700; color: var(--t); }
+  .card h3 { margin: 0; font-size: 1.6rem; line-height: 1.1; }
+  .card p { margin: 0; color: var(--ink-soft); }
+  .card .go { margin-top: 0.4rem; font-weight: 700; color: var(--t); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 5px; }
+
+  footer { padding: 4rem 0 3rem; color: var(--ink-soft); font-size: 0.95rem; }
+  footer p { margin: 0; }
+
+  @media (max-width: 720px) {
+    .gate { padding: 1.5rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .card { transition: none; }
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <a class="home" href="https://brimmer-tech.github.io/">Back to home</a>
-  <header class="hero">
-    <p class="kicker">For teachers</p>
-    <h1>Classroom apps</h1>
-    <p class="lede">Interactive apps built for classes across the school. Try them out, borrow what’s useful, and share feedback with Mr. Ware.</p>
-  </header>
-  <form class="gate" id="gate" autocomplete="off">
-    <h2>Teachers only</h2>
-    <p>Enter the teacher code to see the apps.</p>
-    <label for="code">Teacher code</label>
-    <div class="gate-row">
-      <input id="code" type="password" inputmode="numeric" maxlength="12" required>
-      <button type="submit">Enter</button>
-    </div>
-    <p class="error" id="gate-error" aria-live="polite"></p>
-  </form>
-  <main id="content" hidden>
-    <section aria-labelledby="apps">
-      <h2 id="apps">Browse by subject</h2>
-      <ul class="filters" aria-label="Filter apps by subject">
-      <li><button type="button" data-filter="all" aria-pressed="true">All</button></li>
-      <li><button type="button" data-filter="science" aria-pressed="false">Science</button></li>
-      <li><button type="button" data-filter="tech" aria-pressed="false">Technology</button></li>
-      <li><button type="button" data-filter="math" aria-pressed="false">Math</button></li>
-      <li><button type="button" data-filter="english" aria-pressed="false">English</button></li>
-      <li><button type="button" data-filter="music" aria-pressed="false">Music</button></li>
-      </ul>
-      <p class="count" aria-live="polite"></p>
-      <div class="grid">
-      <a class="card" style="--c: var(--science)" data-cat="science" href="https://brimmer-tech.github.io/artifacts/bioglow.html">
-        <span class="tag">Science, AP Biology</span>
-        <h3>BioGlow Lab Suite</h3>
-        <p>Step through a bacterial transformation lab: run the heat-shock protocol, induce eGFP expression, and calculate transformation efficiency.</p>
-        <span class="go">Open</span>
-      </a>
-      <a class="card" style="--c: var(--science)" data-cat="science" href="https://brimmer-tech.github.io/artifacts/outbreak_simulation.html">
-        <span class="tag">Science, biology</span>
-        <h3>Outbreak Simulation</h3>
-        <p>Model how a virus spreads through a population and see how changing conditions shapes the outbreak.</p>
-        <span class="go">Open</span>
-      </a>
-      <a class="card" style="--c: var(--science)" data-cat="science" href="https://brimmer-tech.github.io/artifacts/rainforest_field_station.html">
-        <span class="tag">Science, middle school</span>
-        <h3>Rainforest Field Station</h3>
-        <p>Explore an interactive rainforest ecosystem, built for middle school students.</p>
-        <span class="go">Open</span>
-      </a>
-      <a class="card" style="--c: var(--science)" data-cat="science" href="https://brimmer-tech.github.io/artifacts/reef_tank_3D.html">
-        <span class="tag">Science, ecosystems</span>
-        <h3>3D Reef Tank</h3>
-        <p>Run a virtual reef tank. Adjust the tank’s settings and keep the fish alive.</p>
-        <span class="go">Open</span>
-      </a>
-      <a class="card" style="--c: var(--science)" data-cat="science" href="https://brimmer-tech.github.io/artifacts/terrarium.html">
-        <span class="tag">Science, ecosystems</span>
-        <h3>Terrarium Builder</h3>
-        <p>Build a terrarium simulation, or follow step-by-step instructions to make a real one.</p>
-        <span class="go">Open</span>
-      </a>
-      <a class="card" style="--c: var(--science)" data-cat="science" href="https://brimmer-tech.github.io/artifacts/virtual_pet.html">
-        <span class="tag">Science, animal care</span>
-        <h3>Clay Pals: Virtual Pet</h3>
-        <p>Adopt and name a clay pet, then keep it happy and healthy with food, play, rest, baths, and check-ups.</p>
-        <span class="go">Open</span>
-      </a>
-      <a class="card" style="--c: var(--tech)" data-cat="tech" href="https://brimmer-tech.github.io/artifacts/aquarium.html">
-        <span class="tag">Technology, Tech 9</span>
-        <h3>Digital Aquarium</h3>
-        <p>The aquarium project built in Technology 9.</p>
-        <span class="go">Open</span>
-      </a>
-      <a class="card" style="--c: var(--tech)" data-cat="tech" href="https://brimmer-tech.github.io/artifacts/robotics_lab.html">
-        <span class="tag">Technology, engineering</span>
-        <h3>Robotics Lab</h3>
-        <p>An interactive introduction to robotics.</p>
-        <span class="go">Open</span>
-      </a>
-      <a class="card" style="--c: var(--tech)" data-cat="tech" href="https://brimmer-tech.github.io/artifacts/circuit_simulator.html">
-        <span class="tag">Technology, electronics</span>
-        <h3>Circuit Simulator</h3>
-        <p>Build simple circuits and see how they behave.</p>
-        <span class="go">Open</span>
-      </a>
-      <a class="card" style="--c: var(--tech)" data-cat="tech" href="https://brimmer-tech.github.io/artifacts/fractal_tree_lab.html">
-        <span class="tag">Technology, coding and math</span>
-        <h3>Fractal Tree Lab</h3>
-        <p>Grow fractal trees, adjust them with sliders, and see the Python code that draws them.</p>
-        <span class="go">Open</span>
-      </a>
-      <a class="card" style="--c: var(--math)" data-cat="math" href="https://brimmer-tech.github.io/artifacts/visual_problem_solver.html">
-        <span class="tag">Math, graphing</span>
-        <h3>Visual Problem Solver</h3>
-        <p>Graph math formulas and see how they change.</p>
-        <span class="go">Open</span>
-      </a>
-      <a class="card" style="--c: var(--math)" data-cat="math" href="https://brimmer-tech.github.io/artifacts/tip_calculator.html">
-        <span class="tag">Math, everyday math</span>
-        <h3>Tip Calculator</h3>
-        <p>Work out tips and split a bill.</p>
-        <span class="go">Open</span>
-      </a>
-      <a class="card" style="--c: var(--english)" data-cat="english" href="https://brimmer-tech.github.io/artifacts/oryx_crake.html">
-        <span class="tag">English, literature</span>
-        <h3>Oryx and Crake Study Resource</h3>
-        <p>A study companion for Margaret Atwood’s novel.</p>
-        <span class="go">Open</span>
-      </a>
-      <a class="card" style="--c: var(--music)" data-cat="music" href="https://brimmer-tech.github.io/artifacts/drum_machine.html">
-        <span class="tag">Music, beat making</span>
-        <h3>Drum Machine</h3>
-        <p>Make beats on a digital drum machine, with a built-in tutorial.</p>
-        <span class="go">Open</span>
-      </a>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <filter id="rough" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="4"/>
+      <feDisplacementMap in="SourceGraphic" scale="3.5"/>
+    </filter>
+  </svg>
+
+  <div class="wrap">
+    <a class="home" href="https://brimmer-tech.github.io/">Back to home</a>
+
+    <header class="hero">
+      <p class="kicker">For teachers</p>
+      <h1>Classroom apps</h1>
+      <svg class="squiggle doodle" viewBox="0 0 420 24" aria-hidden="true">
+        <path d="M4 14 C 40 4, 70 22, 108 12 S 178 4, 214 13 S 288 22, 326 11 S 392 6, 416 14" fill="none" stroke="var(--orange)" stroke-width="6"/>
+      </svg>
+      <p class="lede">Apps built with vibe coding for classes across the school. Try them out, borrow what’s useful, and share feedback with Mr. Ware.</p>
+    </header>
+
+    <form class="gate sketch" id="gate" autocomplete="off">
+      <h2>Teachers only</h2>
+      <p>Enter the teacher code to see the apps.</p>
+      <label for="code">Teacher code</label>
+      <div class="gate-row">
+        <input id="code" type="password" inputmode="numeric" maxlength="12" required>
+        <button type="submit">Enter</button>
       </div>
-    </section>
-  </main>
-  <footer><p>Maintained by Mr. Ware, Brimmer and May Computer Science.</p></footer>
-</div>
+      <p class="error" id="gate-error" aria-live="polite"></p>
+    </form>
+
+    <main id="content" hidden>
+      <section class="apps" aria-labelledby="apps">
+        <h2 id="apps">Browse by subject</h2>
+        <ul class="filters" aria-label="Filter apps by subject">
+          <li><button type="button" class="chip sketch" data-filter="all" aria-pressed="true">All</button></li>
+          <li><button type="button" class="chip sketch" data-filter="science" aria-pressed="false">Science</button></li>
+          <li><button type="button" class="chip sketch" data-filter="tech" aria-pressed="false">Technology</button></li>
+          <li><button type="button" class="chip sketch" data-filter="math" aria-pressed="false">Math</button></li>
+          <li><button type="button" class="chip sketch" data-filter="english" aria-pressed="false">English</button></li>
+          <li><button type="button" class="chip sketch" data-filter="music" aria-pressed="false">Music</button></li>
+        </ul>
+        <p class="count" aria-live="polite"></p>
+        <div class="grid">
+        <a class="card sketch science" data-cat="science" href="https://brimmer-tech.github.io/artifacts/bioglow.html">
+          <span class="tag">Science, AP Biology</span>
+          <h3>BioGlow Lab Suite</h3>
+          <p>Step through a bacterial transformation lab: run the heat-shock protocol, induce eGFP expression, and calculate transformation efficiency.</p>
+          <span class="go">Open the app</span>
+        </a>
+        <a class="card sketch science" data-cat="science" href="https://brimmer-tech.github.io/artifacts/outbreak_simulation.html">
+          <span class="tag">Science, biology</span>
+          <h3>Outbreak Simulation</h3>
+          <p>Model how a virus spreads through a population and see how changing conditions shapes the outbreak.</p>
+          <span class="go">Open the app</span>
+        </a>
+        <a class="card sketch science" data-cat="science" href="https://brimmer-tech.github.io/artifacts/rainforest_field_station.html">
+          <span class="tag">Science, middle school</span>
+          <h3>Rainforest Field Station</h3>
+          <p>Explore an interactive rainforest ecosystem, built for middle school students.</p>
+          <span class="go">Open the app</span>
+        </a>
+        <a class="card sketch science" data-cat="science" href="https://brimmer-tech.github.io/artifacts/reef_tank_3D.html">
+          <span class="tag">Science, ecosystems</span>
+          <h3>3D Reef Tank</h3>
+          <p>Run a virtual reef tank. Adjust the tank’s settings and keep the fish alive.</p>
+          <span class="go">Open the app</span>
+        </a>
+        <a class="card sketch science" data-cat="science" href="https://brimmer-tech.github.io/artifacts/terrarium.html">
+          <span class="tag">Science, ecosystems</span>
+          <h3>Terrarium Builder</h3>
+          <p>Build a terrarium simulation, or follow step-by-step instructions to make a real one.</p>
+          <span class="go">Open the app</span>
+        </a>
+        <a class="card sketch science" data-cat="science" href="https://brimmer-tech.github.io/artifacts/virtual_pet.html">
+          <span class="tag">Science, animal care</span>
+          <h3>Clay Pals: Virtual Pet</h3>
+          <p>Adopt and name a clay pet, then keep it happy and healthy with food, play, rest, baths, and check-ups.</p>
+          <span class="go">Open the app</span>
+        </a>
+        <a class="card sketch tech" data-cat="tech" href="https://brimmer-tech.github.io/artifacts/aquarium.html">
+          <span class="tag">Technology, Tech 9</span>
+          <h3>Digital Aquarium</h3>
+          <p>The aquarium project built in Technology 9.</p>
+          <span class="go">Open the app</span>
+        </a>
+        <a class="card sketch tech" data-cat="tech" href="https://brimmer-tech.github.io/artifacts/robotics_lab.html">
+          <span class="tag">Technology, engineering</span>
+          <h3>Robotics Lab</h3>
+          <p>An interactive introduction to robotics.</p>
+          <span class="go">Open the app</span>
+        </a>
+        <a class="card sketch tech" data-cat="tech" href="https://brimmer-tech.github.io/artifacts/circuit_simulator.html">
+          <span class="tag">Technology, electronics</span>
+          <h3>Circuit Simulator</h3>
+          <p>Build simple circuits and see how they behave.</p>
+          <span class="go">Open the app</span>
+        </a>
+        <a class="card sketch tech" data-cat="tech" href="https://brimmer-tech.github.io/artifacts/fractal_tree_lab.html">
+          <span class="tag">Technology, coding and math</span>
+          <h3>Fractal Tree Lab</h3>
+          <p>Grow fractal trees, adjust them with sliders, and see the Python code that draws them.</p>
+          <span class="go">Open the app</span>
+        </a>
+        <a class="card sketch math" data-cat="math" href="https://brimmer-tech.github.io/artifacts/visual_problem_solver.html">
+          <span class="tag">Math, graphing</span>
+          <h3>Visual Problem Solver</h3>
+          <p>Graph math formulas and see how they change.</p>
+          <span class="go">Open the app</span>
+        </a>
+        <a class="card sketch math" data-cat="math" href="https://brimmer-tech.github.io/artifacts/tip_calculator.html">
+          <span class="tag">Math, everyday math</span>
+          <h3>Tip Calculator</h3>
+          <p>Work out tips and split a bill.</p>
+          <span class="go">Open the app</span>
+        </a>
+        <a class="card sketch english" data-cat="english" href="https://brimmer-tech.github.io/artifacts/oryx_crake.html">
+          <span class="tag">English, literature</span>
+          <h3>Oryx and Crake Study Resource</h3>
+          <p>A study companion for Margaret Atwood’s novel.</p>
+          <span class="go">Open the app</span>
+        </a>
+        <a class="card sketch music" data-cat="music" href="https://brimmer-tech.github.io/artifacts/drum_machine.html">
+          <span class="tag">Music, beat making</span>
+          <h3>Drum Machine</h3>
+          <p>Make beats on a digital drum machine, with a built-in tutorial.</p>
+          <span class="go">Open the app</span>
+        </a>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>Maintained by Mr. Ware, Brimmer and May Computer Science.</p>
+    </footer>
+  </div>
+
 <script>
   // Simple teacher code. This only keeps casual visitors out; it is not real security.
   const TEACHER_CODE = "1963";
@@ -214,8 +306,8 @@
       input.value = ""; input.focus();
     }
   });
-</script>
-<script>
+
+  // Subject filters
   const buttons = document.querySelectorAll("[data-filter]");
   const cards = document.querySelectorAll(".card[data-cat]");
   const count = document.querySelector(".count");
@@ -229,7 +321,7 @@
   }
   buttons.forEach(b => b.addEventListener("click", () => show(b.dataset.filter)));
   const start = location.hash.slice(1);
-  show(names.hasOwnProperty(start) ? start : "all");
+  show(Object.prototype.hasOwnProperty.call(names, start) ? start : "all");
 </script>
 </body>
 </html>
