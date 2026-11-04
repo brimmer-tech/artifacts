@@ -39,6 +39,15 @@ header h1{font-family:"Fredoka", "Trebuchet MS", sans-serif; font-weight:600; fo
 header .intro{margin:0 0 1.25rem; color:var(--muted); max-width:60ch}
 .head-row{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.75rem}
 .modes{display:flex; flex-wrap:wrap; gap:.4rem}
+.mode-area{display:flex; flex-direction:column; align-items:flex-end; gap:.45rem}
+.name-area{display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:.4rem; font-size:.98rem}
+.name-area form{display:flex; flex-wrap:wrap; gap:.4rem; align-items:center; justify-content:flex-end}
+.name-area input{width:11rem; font:inherit; padding:.4rem .65rem; border-radius:10px; border:2px solid var(--line); background:var(--panel); color:var(--ink)}
+.name-area button{padding:.4rem .85rem; font-size:.95rem}
+.name-tag{font-family:"Fredoka", "Trebuchet MS", sans-serif; font-weight:600; font-size:1.1rem}
+.name-note{flex-basis:100%; text-align:right; font-size:.85rem; color:var(--muted); margin:0}
+body.teacher .name-area{display:none}
+.cert-name{font-family:"Fredoka", "Trebuchet MS", sans-serif; font-weight:600; font-size:2rem; margin:.1rem 0 .3rem !important; max-width:none !important}
 .teacher-bar{display:flex; flex-wrap:wrap; gap:.6rem; align-items:center; margin:0 0 1rem}
 .teacher-bar[hidden]{display:none}
 .keys{margin:0; font-size:.9rem; color:var(--muted); flex-basis:100%}
@@ -186,9 +195,12 @@ svg.xray .board-body{fill:#E9EAE3}
   <header>
     <div class="head-row">
       <h1>Breadboard Basics</h1>
-      <div class="modes" role="group" aria-label="Mode">
-        <button type="button" id="studentBtn" aria-pressed="true">Student mode</button>
-        <button type="button" id="teacherBtn" aria-pressed="false">Teacher mode</button>
+      <div class="mode-area">
+        <div class="modes" role="group" aria-label="Mode">
+          <button type="button" id="studentBtn" aria-pressed="true">Student mode</button>
+          <button type="button" id="teacherBtn" aria-pressed="false">Teacher mode</button>
+        </div>
+        <div class="name-area" id="nameArea" aria-live="polite"></div>
       </div>
     </div>
     <p class="intro">Learn the board engineers use to build circuits. Complete each mission to unlock the next step.</p>
@@ -1097,9 +1109,10 @@ M.recap = {
     const gated = steps.filter(x=>x.gated), n = gated.filter(x=>done.has(x.key)).length;
     const stars = MS.free ? MS.free.stars.size : 0;
     const all = n === gated.length;
+    const who = studentName ? `<p class="cert-name">${esc(studentName)}</p>` : "";
     box.innerHTML = `<div class="badge${all ? " earned" : ""}">
-      ${all ? `<p class="badge-title">Breadboard Certified!</p><p>You finished all ${gated.length} missions${stars ? ` and earned ${stars} of ${FREE.length} Free build stars` : ""}. Show your teacher this screen.</p>`
-            : `<p class="badge-title">${n} of ${gated.length} missions done</p><p>Finish the rest to become Breadboard Certified.</p>`}
+      ${all ? `<p class="badge-title">Breadboard Certified!</p>${who}<p>You finished all ${gated.length} missions${stars ? ` and earned ${stars} of ${FREE.length} Free build stars` : ""}. Show your teacher this screen.</p>`
+            : `${who}<p class="badge-title">${n} of ${gated.length} missions done</p><p>Finish the rest to become Breadboard Certified.</p>`}
     </div>`;
   }
 };
@@ -1260,13 +1273,46 @@ function render(focusTitle){
   if (focusTitle) document.getElementById("stepTitle").focus({preventScroll:true});
 }
 prevBtn.onclick = ()=>{ if (cur > 0){ cur--; render(true); } };
+function newSession(){
+  cur = 0; MS = {}; done.clear(); resChoice = "r220";
+  setXray(false); setTester(false);
+}
 nextBtn.onclick = ()=>{
-  if (cur === steps.length - 1){
-    cur = 0; MS = {}; done.clear(); resChoice = "r220";
-    setXray(false); setTester(false);
-  } else cur++;
+  if (cur === steps.length - 1) newSession(); else cur++;
   render(true);
 };
+
+/* ---------- student name ---------- */
+let studentName = "";
+const nameArea = document.getElementById("nameArea");
+const esc = t => t.replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function renderName(editing){
+  if (studentName && !editing){
+    nameArea.innerHTML = `<span class="name-tag">Student: ${esc(studentName)}</span><button type="button" id="nameChange">New student</button>`;
+    document.getElementById("nameChange").onclick = ()=>{ renderName(true); document.getElementById("nameInput").focus(); };
+    return;
+  }
+  nameArea.innerHTML = `<form id="nameForm" autocomplete="off">
+      <label for="nameInput" class="sr">Your first name</label>
+      <input id="nameInput" placeholder="Your first name" maxlength="20" autocomplete="off">
+      <button type="submit" class="primary">Start</button>
+      ${studentName ? `<button type="button" id="nameCancel">Cancel</button>` : ""}
+    </form>
+    ${studentName ? `<p class="name-note">A new name starts a fresh session from step 1.</p>` : ""}`;
+  const cancel = document.getElementById("nameCancel");
+  if (cancel) cancel.onclick = ()=>{ renderName(false); document.getElementById("nameChange").focus(); };
+  document.getElementById("nameForm").addEventListener("submit", e=>{
+    e.preventDefault();
+    const v = document.getElementById("nameInput").value.trim().replace(/\s+/g, " ");
+    if (!v){ document.getElementById("nameInput").focus(); return; }
+    studentName = v;
+    newSession();
+    renderName(false);
+    render(true);
+    readout.innerHTML = `Welcome, <b>${esc(studentName)}</b>! Complete each mission to unlock the next step.`;
+  });
+}
+renderName(false);
 
 /* ---------- student and teacher modes ---------- */
 const layout = document.querySelector(".layout");
