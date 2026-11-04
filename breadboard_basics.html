@@ -47,6 +47,9 @@ header .intro{margin:0 0 1.25rem; color:var(--muted); max-width:60ch}
 .name-tag{font-family:"Fredoka", "Trebuchet MS", sans-serif; font-weight:600; font-size:1.1rem}
 .name-note{flex-basis:100%; text-align:right; font-size:.85rem; color:var(--muted); margin:0}
 body.teacher .name-area{display:none}
+.start-overlay{z-index:40; background:rgba(10,15,20,.82)}
+.pin-box .name-input{letter-spacing:normal; font-size:1.3rem}
+.linkish{border:none; padding:0; background:none; border-radius:0; text-decoration:underline; font-family:inherit; font-size:.95rem; color:var(--accent)}
 .cert-name{font-family:"Fredoka", "Trebuchet MS", sans-serif; font-weight:600; font-size:2rem; margin:.1rem 0 .3rem !important; max-width:none !important}
 .teacher-bar{display:flex; flex-wrap:wrap; gap:.6rem; align-items:center; margin:0 0 1rem}
 .teacher-bar[hidden]{display:none}
@@ -247,6 +250,20 @@ svg.xray .board-body{fill:#E9EAE3}
       <div id="notesBody"></div>
     </aside>
   </main>
+</div>
+
+<div class="pin-overlay start-overlay" id="startOverlay" hidden>
+  <div class="pin-box" role="dialog" aria-modal="true" aria-labelledby="startTitle">
+    <h2 id="startTitle">Welcome to Breadboard Basics</h2>
+    <p id="startMsg">Type your first name and press Start to begin.</p>
+    <form id="startForm" autocomplete="off">
+      <label for="startInput" class="sr">Your first name</label>
+      <input id="startInput" class="name-input" placeholder="Your first name" maxlength="20" autocomplete="off">
+      <p id="startErr" class="msg bad" aria-live="polite"></p>
+      <div class="row"><button type="submit" class="primary">Start</button><button type="button" id="startCancel" hidden>Cancel</button></div>
+    </form>
+    <p class="note"><button type="button" class="linkish" id="startTeacher">Teacher? Unlock teacher mode</button></p>
+  </div>
 </div>
 
 <div class="pin-overlay" id="pinOverlay" hidden>
@@ -1245,6 +1262,7 @@ function refresh(){
   updateNav();
 }
 function onHole(id){
+  if (!teacher && !studentName) return;
   if (testerOn){ testerTap(id); return; }
   const s = steps[cur], m = M[s.type];
   if (m && m.tap){ m.tap(id, s, st(s)); return; }
@@ -1286,33 +1304,43 @@ nextBtn.onclick = ()=>{
 let studentName = "";
 const nameArea = document.getElementById("nameArea");
 const esc = t => t.replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-function renderName(editing){
-  if (studentName && !editing){
-    nameArea.innerHTML = `<span class="name-tag">Student: ${esc(studentName)}</span><button type="button" id="nameChange">New student</button>`;
-    document.getElementById("nameChange").onclick = ()=>{ renderName(true); document.getElementById("nameInput").focus(); };
-    return;
-  }
-  nameArea.innerHTML = `<form id="nameForm" autocomplete="off">
-      <label for="nameInput" class="sr">Your first name</label>
-      <input id="nameInput" placeholder="Your first name" maxlength="20" autocomplete="off">
-      <button type="submit" class="primary">Start</button>
-      ${studentName ? `<button type="button" id="nameCancel">Cancel</button>` : ""}
-    </form>
-    ${studentName ? `<p class="name-note">A new name starts a fresh session from step 1.</p>` : ""}`;
-  const cancel = document.getElementById("nameCancel");
-  if (cancel) cancel.onclick = ()=>{ renderName(false); document.getElementById("nameChange").focus(); };
-  document.getElementById("nameForm").addEventListener("submit", e=>{
-    e.preventDefault();
-    const v = document.getElementById("nameInput").value.trim().replace(/\s+/g, " ");
-    if (!v){ document.getElementById("nameInput").focus(); return; }
-    studentName = v;
-    newSession();
-    renderName(false);
-    render(true);
-    readout.innerHTML = `Welcome, <b>${esc(studentName)}</b>! Complete each mission to unlock the next step.`;
-  });
+const startOverlay = document.getElementById("startOverlay"), startInput = document.getElementById("startInput");
+const startErr = document.getElementById("startErr"), startCancel = document.getElementById("startCancel");
+const wrapEl = document.querySelector(".wrap");
+let startEditing = false;
+function renderName(){
+  nameArea.innerHTML = studentName ? `<span class="name-tag">Student: ${esc(studentName)}</span><button type="button" id="nameChange">New student</button>` : "";
+  const c = document.getElementById("nameChange");
+  if (c) c.onclick = ()=>openStart(true);
 }
-renderName(false);
+function openStart(editing){
+  startEditing = !!editing;
+  startInput.value = ""; startErr.textContent = "";
+  startCancel.hidden = !startEditing;
+  document.getElementById("startMsg").textContent = startEditing
+    ? "Type the new student’s first name. This starts a fresh session from step 1."
+    : "Type your first name and press Start to begin.";
+  updateGate();
+}
+function updateGate(){
+  const need = !teacher && (!studentName || startEditing);
+  startOverlay.hidden = !need;
+  wrapEl.inert = need;
+  if (need) wrapEl.setAttribute("aria-hidden", "true"); else wrapEl.removeAttribute("aria-hidden");
+  if (need && document.getElementById("pinOverlay").hidden) startInput.focus();
+}
+document.getElementById("startForm").addEventListener("submit", e=>{
+  e.preventDefault();
+  const v = startInput.value.trim().replace(/\s+/g, " ");
+  if (!v){ startErr.textContent = "Please type your first name."; startInput.focus(); return; }
+  studentName = v; startEditing = false;
+  newSession(); renderName(); updateGate(); render(true);
+  readout.innerHTML = `Welcome, <b>${esc(studentName)}</b>! Complete each mission to unlock the next step.`;
+});
+startCancel.onclick = ()=>{ startEditing = false; updateGate(); const c = document.getElementById("nameChange"); if (c) c.focus(); };
+startOverlay.addEventListener("keydown", e=>{ if (e.key === "Escape" && startEditing){ e.preventDefault(); startCancel.click(); } });
+document.getElementById("startTeacher").onclick = ()=>setMode(true);
+renderName();
 
 /* ---------- student and teacher modes ---------- */
 const layout = document.querySelector(".layout");
@@ -1342,6 +1370,7 @@ function setMode(t, fromHash){
     if (location.hash !== h){ try{ history.replaceState(null, "", h); }catch(_){ location.hash = h; } }
   }
   updateNav();
+  updateGate();
 }
 studentBtn.onclick = ()=>setMode(false);
 teacherBtn.onclick = ()=>setMode(true);
@@ -1436,6 +1465,7 @@ document.getElementById("pinForm").addEventListener("submit", async e=>{
   }
 });
 
+updateGate();
 render(false);
 (async ()=>{
   try{
