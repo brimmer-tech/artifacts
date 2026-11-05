@@ -68,8 +68,13 @@ body.teacher .name-area{display:none}
 .tools input{width:6.5rem; font:inherit; padding:.45rem .6rem; border-radius:10px; border:2px solid var(--line); background:var(--bg); color:var(--ink)}
 button{font-family:"Fredoka", "Trebuchet MS", sans-serif; font-weight:500; font-size:1rem; padding:.55rem 1rem; border-radius:999px; border:2px solid var(--accent); background:transparent; color:var(--accent); cursor:pointer}
 button.primary{background:var(--accent); color:var(--accent-ink)}
-button[aria-pressed="true"]{background:var(--accent-soft)}
+button{transition:background-color .12s, color .12s, transform .06s, filter .06s}
+button:not(.primary):not([aria-pressed="true"]):not(.active):hover:not(:disabled){background:color-mix(in srgb, var(--accent) 18%, transparent)}
+button:active:not(:disabled){transform:translateY(1px) scale(.97); filter:brightness(.9)}
+button[aria-pressed="true"]{background:var(--accent); color:var(--accent-ink); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent)}
 button.primary[aria-pressed="true"]{background:var(--accent)}
+button[data-tool][aria-pressed="true"]::before, button[data-r][aria-pressed="true"]::before{content:"✓ "}
+.progress button[aria-pressed]{box-shadow:none}
 button:disabled{opacity:.4; cursor:not-allowed}
 button:focus-visible, input:focus-visible{outline:3px solid var(--accent); outline-offset:2px}
 .readout{margin:.85rem 0 0; padding:.7rem .9rem; border-radius:12px; background:var(--bg); min-height:3.1rem}
@@ -92,6 +97,11 @@ button:focus-visible, input:focus-visible{outline:3px solid var(--accent); outli
 .mission.done .mission-h{color:var(--good)}
 .mission .try{background:var(--panel)}
 .pair{font-size:1.15rem}
+.choices{display:flex; flex-direction:column; gap:.5rem; margin:.4rem 0 .8rem}
+.choice{text-align:left; border-radius:14px; font-family:"Atkinson Hyperlegible", "Segoe UI", sans-serif; font-weight:400; padding:.6rem .9rem; background:var(--panel)}
+.choice:disabled{opacity:.55}
+.choice.right{border-color:var(--good); background:var(--good-soft); color:var(--good); font-weight:700; opacity:1}
+.choice.wrong{border-color:var(--bad); color:var(--bad)}
 .checks{list-style:none; padding:0; margin:.3rem 0 .8rem}
 .checks li{padding:.35rem 0 .35rem 1.9rem; position:relative}
 .checks li::before{content:""; position:absolute; left:.15rem; top:.6rem; width:1.05rem; height:1.05rem; border:2px solid var(--line); border-radius:50%; background:var(--panel)}
@@ -168,11 +178,13 @@ svg.xray .board-body{fill:#E9EAE3}
 .hole.lit2{fill:#F08A1C}
 .hole.picked{stroke:#0A5A33; stroke-width:2.2}
 .hit{fill:transparent; cursor:pointer}
+.btn-hit{fill:transparent; cursor:pointer}
 .ring{fill:none; stroke:#7B5CFF; stroke-width:3; animation:pulse 1.2s ease-in-out infinite}
 @keyframes pulse{0%,100%{stroke-opacity:1}50%{stroke-opacity:.25}}
 .wire{fill:none; stroke-width:4.5; stroke-linecap:round}
-.flow{fill:none; stroke:#FFD23F; stroke-width:3; stroke-dasharray:5 11; stroke-linecap:round; animation:flow .9s linear infinite; opacity:.95}
-@keyframes flow{to{stroke-dashoffset:-16}}
+.flow-track{fill:none; stroke:#E08A00; stroke-opacity:.45; stroke-width:8; stroke-linecap:round; stroke-linejoin:round}
+.flow{fill:none; stroke:#FFE14D; stroke-width:6; stroke-dasharray:.1 14; stroke-linecap:round; stroke-linejoin:round; animation:flow .9s linear infinite; filter:drop-shadow(0 0 1.5px #6B3A00) drop-shadow(0 0 3px #FFB300)}
+@keyframes flow{to{stroke-dashoffset:-14.1}}
 .led-body{fill:#E05555; fill-opacity:.55; stroke:#9E2B2B; stroke-width:1.5}
 .led-on .led-body{fill:#FF2E2E; fill-opacity:1; filter:url(#glow)}
 .led-on.b-high .led-body{fill:#FF8A8A; filter:url(#glowBig)}
@@ -322,6 +334,7 @@ const gFlow = el("g", {}, svg);
 const gMarks = el("g", {"pointer-events":"none"}, svg);
 const gProbes = el("g", {"pointer-events":"none"}, svg);
 const gHits = el("g", {}, svg);
+const gBtnHits = el("g", {}, svg);
 
 /* ---------- board ---------- */
 el("rect", {class:"board-body", x:66, y:8, width:590, height:370, rx:12}, gBoard);
@@ -441,7 +454,9 @@ parts.led = (function(){
   dot(g,334,100,"#000"); dot(g,334,54,"#000"); })();
 parts.smoke = makeSmoke(gParts, 316, 76);
 parts.smoke.style.display = "none";
-const flowPath = el("path", {class:"flow", d:"M54 34 C80 34 96 22 118 36 L190 36 C158 44 158 92 190 100 L190 136 L298 136 L298 118 L298 104 L316 86 L334 104 L334 118 L334 100 C366 90 366 60 334 54 L118 54 C98 66 82 66 54 66", style:"display:none"}, gFlow);
+const FLOW1 = "M54 34 C80 34 96 22 118 36 L190 36 C158 44 158 92 190 100 L190 136 L298 136 L298 118 L298 104 L316 86 L334 104 L334 118 L334 100 C366 90 366 60 334 54 L118 54 C98 66 82 66 54 66";
+const flowTrack = el("path", {class:"flow-track", d:FLOW1, style:"display:none"}, gFlow);
+const flowPath = el("path", {class:"flow", d:FLOW1, style:"display:none"}, gFlow);
 
 let resChoice = "r220";
 const RES = {
@@ -476,6 +491,7 @@ function drawParts(visible){
     }
   }
   flowPath.style.display = flowOn ? "" : "none";
+  flowTrack.style.display = flowOn ? "" : "none";
   flowPath.style.animationDuration = {high:".45s", ok:".9s", dim:"2.2s", faint:"6s"}[r.mood] || ".9s";
   flowPath.style.opacity = r.mood === "faint" ? ".35" : "";
 }
@@ -483,6 +499,7 @@ function drawParts(visible){
 /* ---------- workbench engine (student-built circuits) ---------- */
 const sbBattery = makeBattery(gSandbox);
 const sbLayer = el("g", {}, gSandbox);
+const benchFlow = el("g", {}, gSandbox);
 let nid = 1;
 const BATTERY_HOLES = new Set(["tp2","tn2"]);
 const SB_TOOLS = [["redwire","Red wire"],["blackwire","Black wire"],["resistor","Resistor"],["led","LED"],["button","Button"],["remove","Remove a part"]];
@@ -566,10 +583,86 @@ function drawBenchPart(p, sim, B){
     dot(g,A.x,A.y,"#666"); dot(g,Bh.x,Bh.y,"#666");
   }
 }
+function partGeo(p){
+  const A = holes[p.a], Bh = holes[p.b];
+  const mx = (A.x+Bh.x)/2, my = (A.y+Bh.y)/2, dx = Bh.x-A.x, dy = Bh.y-A.y, d = Math.hypot(dx,dy) || 1;
+  return {A, Bh, mx, my, nx:-dy/d, ny:dx/d, d};
+}
+function partPath(p, fromA){
+  const g = partGeo(p), S = fromA ? g.A : g.Bh, E = fromA ? g.Bh : g.A;
+  if (p.type === "wire"){ const bend = Math.min(32, g.d*0.35); return `M${S.x} ${S.y} Q${g.mx - g.nx*bend} ${g.my - g.ny*bend} ${E.x} ${E.y}`; }
+  if (p.type === "led"){ return `M${S.x} ${S.y} L${g.mx - g.nx*18} ${g.my - g.ny*18} L${E.x} ${E.y}`; }
+  return `M${S.x} ${S.y} L${E.x} ${E.y}`;
+}
+/* traces the path electricity takes, from the battery's + through each part and back to − */
+function benchFlowPaths(B, sim){
+  const N = id => holes[id].node;
+  const conductors = B.parts.filter(p=>p.type === "wire" || (p.type === "button" && B.pressed));
+  const U = makeUF(); conductors.forEach(p=>U.join(N(p.a), N(p.b)));
+  const Cc = n => U.find(n);
+  const Pc = Cc("TP"), Nc = Cc("TN");
+  const leds = B.parts.filter(p=>p.type === "led" && sim.lit.has(p.id));
+  const rs = B.parts.filter(p=>p.type === "resistor" && Cc(N(p.a)) !== Cc(N(p.b)));
+  const reach = (start, rev)=>{
+    const seen = new Set([start]), q = [start];
+    while (q.length){
+      const n = q.shift();
+      rs.forEach(r=>{ const a = Cc(N(r.a)), b = Cc(N(r.b)); if (a === n && !seen.has(b)){ seen.add(b); q.push(b); } if (b === n && !seen.has(a)){ seen.add(a); q.push(a); } });
+      leds.forEach(l=>{ const an = Cc(N(l.a)), ca = Cc(N(l.b)), u = rev ? ca : an, v = rev ? an : ca; if (u === n && !seen.has(v)){ seen.add(v); q.push(v); } });
+    }
+    return seen;
+  };
+  const F = reach(Pc, false), Bk = reach(Nc, true), on = c => F.has(c) && Bk.has(c);
+  const elems = rs.filter(r=>on(Cc(N(r.a))) && on(Cc(N(r.b)))).concat(leds);
+  const dist = {}; dist[Pc] = 0; const q = [Pc];
+  while (q.length){
+    const n = q.shift();
+    elems.forEach(e=>{ const a = Cc(N(e.a)), b = Cc(N(e.b));
+      if (a === n && dist[b] === undefined){ dist[b] = dist[n] + 1; q.push(b); }
+      if (b === n && dist[a] === undefined){ dist[a] = dist[n] + 1; q.push(a); } });
+  }
+  const out = ["M54 34 C80 34 96 22 118 36"], ports = {};
+  const port = c => ports[c] || (ports[c] = {ins:[], outs:[]});
+  port(Pc).ins.push("tp2"); port(Nc).outs.push("tn2");
+  elems.forEach(e=>{
+    let fromA = true;
+    if (e.type !== "led"){ const da = dist[Cc(N(e.a))], db = dist[Cc(N(e.b))]; fromA = (da === undefined ? 1e9 : da) <= (db === undefined ? 1e9 : db); }
+    const src = fromA ? e.a : e.b, dst = fromA ? e.b : e.a;
+    port(Cc(N(src))).outs.push(src); port(Cc(N(dst))).ins.push(dst);
+    out.push(partPath(e, fromA));
+  });
+  const adj = {};
+  conductors.forEach(p=>{ const a = N(p.a), b = N(p.b);
+    (adj[a] = adj[a] || []).push({p, here:p.a, there:p.b, to:b});
+    (adj[b] = adj[b] || []).push({p, here:p.b, there:p.a, to:a}); });
+  const seg = (h1, h2)=>`M${holes[h1].x} ${holes[h1].y} L${holes[h2].x} ${holes[h2].y}`;
+  function route(fromHole, toHole){
+    const s0 = N(fromHole), s1 = N(toHole), prev = {}; prev[s0] = null; const qq = [s0];
+    while (qq.length){ const n = qq.shift(); if (n === s1) break; (adj[n] || []).forEach(ed=>{ if (prev[ed.to] === undefined){ prev[ed.to] = ed; qq.push(ed.to); } }); }
+    if (prev[s1] === undefined) return;
+    const chain = []; let n = s1;
+    while (prev[n]){ chain.unshift(prev[n]); n = N(prev[n].here); }
+    let curH = fromHole;
+    chain.forEach(ed=>{ if (curH !== ed.here) out.push(seg(curH, ed.here)); out.push(partPath(ed.p, ed.here === ed.p.a)); curH = ed.there; });
+    if (curH !== toHole) out.push(seg(curH, toHole));
+  }
+  Object.values(ports).forEach(pt=>pt.ins.forEach(i=>pt.outs.forEach(o=>route(i, o))));
+  out.push("M118 54 C98 66 82 66 54 66");
+  return out;
+}
 function drawBench(B){
   while (sbLayer.firstChild) sbLayer.removeChild(sbLayer.firstChild);
+  while (benchFlow.firstChild) benchFlow.removeChild(benchFlow.firstChild);
+  while (gBtnHits.firstChild) gBtnHits.removeChild(gBtnHits.firstChild);
   const sim = B.power ? simulate(B) : null;
   B.parts.forEach(p=>drawBenchPart(p, sim, B));
+  if (sim && !sim.short && sim.lit.size){
+    const ds = benchFlowPaths(B, sim);
+    ds.forEach(d=>el("path", {class:"flow-track", d}, benchFlow));
+    ds.forEach(d=>el("path", {class:"flow", d}, benchFlow));
+  }
+  B.parts.forEach(p=>{ if (p.type !== "button") return; const g = partGeo(p);
+    el("rect", {class:"btn-hit", x:g.mx-13, y:g.my-13, width:26, height:26, rx:5, "data-pid":p.id}, gBtnHits); });
   if (B.pending){ const h = holes[B.pending]; el("circle", {class:"ring", cx:h.x, cy:h.y, r:9}, sbLayer); }
   sbBattery.classList.toggle("short-flash", !!(sim && sim.short));
   return sim;
@@ -582,6 +675,7 @@ function benchStatus(B, sim){
   if (sim.burnt.size){ out.push(`${sim.burnt.size === 1 ? "An LED" : "Some LEDs"} burned out because there’s no resistor in the loop.`); cls = "msg bad"; }
   if (sim.backwards) out.push("An LED is in backwards.");
   if (sim.same) out.push("An LED has both legs on the same strip, so electricity skips it.");
+  if (sim.lit.size) out.push("The moving yellow dots show the current flowing from the + rail, through the parts, and back to the − rail.");
   if (!out.length){
     out.push(B.parts.some(p=>p.type === "button") && !B.pressed
       ? "No light yet. If your loop has a button, press and hold it."
@@ -619,6 +713,7 @@ function toolsRow(B){
 }
 function wireTools(box, B){
   box.querySelectorAll("[data-tool]").forEach(b=>b.onclick = ()=>{
+    if (testerOn) setTester(false);
     B.tool = b.dataset.tool; B.pending = null;
     refresh();
     const nb = document.querySelector(`[data-tool="${B.tool}"]`); if (nb) nb.focus();
@@ -779,6 +874,18 @@ function makeHold(btn, onChange){
   btn.addEventListener("contextmenu", e=>e.preventDefault());
 }
 
+let pressHandler = null;
+gBtnHits.addEventListener("pointerdown", e=>{
+  if (!e.target.getAttribute || !e.target.getAttribute("data-pid") || !pressHandler) return;
+  if (!teacher && !studentName) return;
+  e.preventDefault();
+  const h = pressHandler;
+  h(true);
+  const up = ()=>{ window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up); h(false); };
+  window.addEventListener("pointerup", up); window.addEventListener("pointercancel", up);
+});
+function testerNote(){ return testerOn ? `<p class="note"><b>The tester is on</b>, so tapping holes tests them instead of placing parts. Turn it off, or pick a part, to keep building.</p>` : ""; }
+
 /* ---------- missions ---------- */
 const done = new Set();
 let MS = {};
@@ -790,7 +897,7 @@ function mbox(s, inner){
   return `<div class="mission${d ? " done" : ""}"><p class="mission-h">${d ? "Mission complete!" : "Mission"}</p>${inner}</div>`;
 }
 function checklist(items){ return `<ul class="checks">${items.map(([ok,txt])=>`<li class="${ok ? "ok" : ""}">${txt}</li>`).join("")}</ul>`; }
-function benchOf(s){ return ["guided","fix","free"].includes(s.type) ? st(s).bench : null; }
+function benchOf(s){ return ["guided","fix","free","review"].includes(s.type) ? st(s).bench : null; }
 
 M.explore3 = {
   init:()=>({seen:new Set()}),
@@ -924,7 +1031,7 @@ function instr(t){
   if (t.type === "led") return `Place the <b>LED</b>. Tap the long leg (+) hole first, in <b>${nodeName(t.a)}</b>. Then tap the short leg hole, in <b>${nodeName(t.b)}</b>.`;
   return `Place the <b>${t.name.toLowerCase()}</b> from <b>${nodeName(t.a)}</b> to <b>${nodeName(t.b)}</b>.`;
 }
-const PRESS_WIN = "It lights up! Pressing the button closes the gap and completes the loop. Let go and the loop breaks.";
+const PRESS_WIN = "It lights up! Pressing the button closes the gap and completes the loop. Watch the yellow dots: that’s the current flowing. Let go and the loop breaks.";
 M.guided = {
   init:()=>({bench:newBench(), i:0, wrong:0, msg:"", cls:"msg"}),
   render(box,s,S){
@@ -938,27 +1045,29 @@ M.guided = {
     let status = "", scls = "msg";
     if (all){
       if (!B.power) status = s.finish === "press" ? "All parts are in. Turn on the power, then press and hold the button." : "All parts are in. Turn on the power!";
-      else if (lit){ scls = "msg good"; status = s.finish === "press" ? PRESS_WIN : "It glows! Electricity flows out of the + rail, through the resistor and the LED, and back to the − rail. That full loop is a circuit."; }
-      else status = s.finish === "press" ? (done.has(s.key) ? "Nice work! Press the button again any time." : "Power is on. Now press and hold the button.") : "No light. Check that every part is in the right spot.";
+      else if (lit){ scls = "msg good"; status = s.finish === "press" ? PRESS_WIN : "It glows! The moving yellow dots show the current flowing out of the + rail, through the resistor and the LED, and back to the − rail. That full loop is a circuit."; }
+      else status = s.finish === "press" ? (done.has(s.key) ? "Nice work! Press the button again any time." : "Power is on. Now press and hold the push button on the board, or use the button below.") : "No light. Check that every part is in the right spot.";
     }
     box.innerHTML = mbox(s, `<p>Build this circuit yourself, one part at a time. Tap one hole for each end of the part.</p>
       <ol class="parts">${items}</ol>
-      ${!all ? `<div class="try"><strong>Now:</strong> ${instr(tasks[S.i])}</div>` : ""}
+      ${!all ? `<div class="try"><strong>Now:</strong> ${instr(tasks[S.i])}</div>${testerNote()}` : ""}
       <p class="${S.cls}" aria-live="polite">${S.msg}</p>
       ${!all && S.wrong >= 2 ? `<p class="note">Hint: use any of the glowing holes. Green is where one end goes, orange is where the other end goes.</p>` : ""}
       ${all ? `<div class="row"><button type="button" class="primary" id="gPower" aria-pressed="${B.power}">${B.power ? "Turn power off" : "Turn power on"}</button>${s.finish === "press" ? `<button type="button" id="gHold" class="holdbtn" ${B.power ? "" : "disabled"}>Press and hold the button</button>` : ""}</div><p id="gStatus" class="${scls}" aria-live="polite">${status}</p>` : ""}
       <div class="row"><button type="button" id="gUndo" ${S.i ? "" : "disabled"}>Undo last part</button><button type="button" id="gRestart" ${S.i ? "" : "disabled"}>Start this build over</button></div>`);
     const pw = document.getElementById("gPower");
     if (pw) pw.onclick = ()=>{ B.power = !B.power; B.pressed = false; refresh(); document.getElementById("gPower").focus(); };
-    const hb = document.getElementById("gHold");
-    if (hb) makeHold(hb, v=>{
+    const onPress = v=>{
       B.pressed = v;
       const sm = drawBench(B), on = !!(sm && sm.lit.size);
       if (v){
         const p = document.getElementById("gStatus");
-        if (on){ complete(s); p.className = "msg good"; p.textContent = PRESS_WIN; }
-      } else { refresh(); const h = document.getElementById("gHold"); if (h) h.focus(); }
-    });
+        if (on && s.finish === "press" && S.i >= tasks.length){ complete(s); if (p){ p.className = "msg good"; p.textContent = PRESS_WIN; } }
+      } else refresh();
+    };
+    pressHandler = B.parts.some(p=>p.type === "button") ? onPress : null;
+    const hb = document.getElementById("gHold");
+    if (hb) makeHold(hb, v=>{ onPress(v); if (!v){ const h = document.getElementById("gHold"); if (h) h.focus(); } });
     document.getElementById("gUndo").onclick = ()=>{ B.parts.pop(); S.i--; B.power = false; B.pressed = false; S.wrong = 0; S.msg = "Last part removed."; S.cls = "msg"; refresh(); };
     document.getElementById("gRestart").onclick = ()=>{ S.bench = newBench(); S.i = 0; S.wrong = 0; S.msg = "Starting over. Only the battery is left."; S.cls = "msg"; refresh(); };
   },
@@ -1067,7 +1176,7 @@ M.fix = {
     box.innerHTML = mbox(s, `<p class="count">Puzzle ${S.pi+1} of ${PUZZLES.length}</p>
       <h3>${Pz.title}</h3><p>${Pz.clue}</p>
       ${fixed ? `<p class="msg good">Fixed! ${Pz.explain}</p>${!last ? `<div class="row"><button type="button" class="primary" id="fxNext">Next puzzle</button></div>` : `<p>You fixed every circuit. You’re a real debugger!</p>`}`
-        : `${toolsRow(B)}<p class="${scls}" aria-live="polite">${smsg}</p>
+        : `${toolsRow(B)}${testerNote()}<p class="${scls}" aria-live="polite">${smsg}</p>
            ${S.hint ? `<p class="note">Hint: ${Pz.hint}</p>` : (S.changes >= 2 ? `<div class="row"><button type="button" id="fxHint">Show a hint</button></div>` : "")}`}
       <div class="row"><button type="button" id="fxReset">Reset this puzzle</button></div>`);
     wireTools(box, B);
@@ -1095,7 +1204,7 @@ M.free = {
     evalFree(S, sim);
     const [scls, smsg] = benchStatus(B, sim);
     const hasBtn = B.parts.some(p=>p.type === "button");
-    box.innerHTML = `${toolsRow(B)}
+    box.innerHTML = `${toolsRow(B)}${testerNote()}
       <div class="row">
         <button type="button" class="primary" id="sbPower" aria-pressed="${B.power}">${B.power ? "Turn power off" : "Turn power on"}</button>
         ${hasBtn ? `<button type="button" id="sbHold" class="holdbtn">Press and hold buttons</button>` : ""}
@@ -1110,15 +1219,76 @@ M.free = {
     document.getElementById("sbPower").onclick = ()=>{ B.power = !B.power; refresh(); document.getElementById("sbPower").focus(); };
     document.getElementById("sbUndo").onclick = ()=>{ B.parts.pop(); B.pending = null; refresh(); readout.innerHTML = "Last part removed."; };
     document.getElementById("sbClear").onclick = ()=>{ B.parts = []; B.pending = null; refresh(); readout.innerHTML = "Board cleared. Only the battery is left."; };
-    const hb = document.getElementById("sbHold");
-    if (hb) makeHold(hb, v=>{
+    const onPress = v=>{
       B.pressed = v;
       const sm = drawBench(B); evalFree(S, sm);
       if (v){ const [c,m] = benchStatus(B, sm); const p = document.getElementById("sbStatus"); p.className = c; p.textContent = m; }
-      else { refresh(); const h = document.getElementById("sbHold"); if (h) h.focus(); }
-    });
+      else refresh();
+    };
+    pressHandler = hasBtn ? onPress : null;
+    const hb = document.getElementById("sbHold");
+    if (hb) makeHold(hb, v=>{ onPress(v); if (!v){ const h = document.getElementById("sbHold"); if (h) h.focus(); } });
   },
   tap(id,s,S){ benchTap(S.bench, id); refresh(); }
+};
+
+const REVIEW = [
+  {parts:[{type:"wire", color:"red", a:"tp4", b:"a4"}, {type:"resistor", a:"c4", b:"c9"}, {type:"led", a:"b11", b:"b9"}, {type:"wire", color:"black", a:"a11", b:"tn11"}],
+   opts:["The resistor is too big.", "The LED is in backwards.", "The black wire is on the wrong rail."], answer:1,
+   explain:"The LED’s long leg (+) is in column 11, the side that leads to the − rail. Flip it so the long leg is in column 9.",
+   fb:["220 Ω is a fine size for an LED. Look at the + mark on the LED.", "", "The black wire goes to the − rail, which is right. Look at the + mark on the LED."]},
+  {parts:[{type:"wire", color:"red", a:"tp5", b:"a5"}, {type:"resistor", a:"c5", b:"c11"}, {type:"led", a:"b11", b:"b13"}, {type:"wire", color:"black", a:"a13", b:"tn13"}, {type:"wire", color:"red", a:"tp24", b:"tn24"}],
+   opts:["The LED needs to be flipped.", "There’s no resistor.", "A wire connects + straight to −, making a short circuit."], answer:2,
+   explain:"The red wire in column 24 links the + rail to the − rail. Electricity takes that easy path and skips the LED, and the battery heats up.",
+   fb:["The LED’s long leg is on the + side, so it’s facing the right way. Watch the battery: it’s flashing.", "There’s a resistor from column 5 to column 11. Look for a wire going straight from + to −.", ""]},
+  {parts:[{type:"wire", color:"red", a:"tp7", b:"a7"}, {type:"resistor", a:"c7", b:"c12"}, {type:"led", a:"e12", b:"f14"}, {type:"wire", color:"black", a:"a14", b:"tn14"}],
+   opts:["The battery is dead.", "The LED’s short leg is in the bottom half of column 14, but the black wire is in the top half.", "The resistor is in backwards."], answer:1,
+   explain:"The valley splits column 14 into two strips. The black wire has to be on the same strip as the LED’s short leg.",
+   fb:["The battery is fine. Try the tester: is the LED’s short leg connected to the − rail?", "", "Resistors work in either direction, so this one is fine."]},
+  {parts:[{type:"wire", color:"red", a:"tp8", b:"a8"}, {type:"led", a:"b8", b:"b10"}, {type:"wire", color:"black", a:"a10", b:"tn10"}],
+   opts:["There’s no resistor, so the LED burned out.", "The LED is in the bottom half of the board.", "The red wire should be black."], answer:0,
+   explain:"Every LED needs a resistor in its loop to limit how much electricity flows.",
+   fb:["", "The LED is in the top half, rows a–e. Look at what’s missing between the red wire and the LED.", "Wire color doesn’t change how electricity flows. Colors just help people read a circuit."]},
+  {parts:[{type:"wire", color:"red", a:"tp6", b:"a6"}, {type:"resistor", a:"c6", b:"c12"}, {type:"led", a:"b12", b:"b14"}, {type:"wire", color:"black", a:"a14", b:"bn14"}],
+   opts:["The resistor is backwards.", "The black wire goes to the bottom − rail, which isn’t connected to the battery.", "The LED needs a second resistor."], answer:1,
+   explain:"The bottom rails are separate from the top rails. Move the black wire to the top − rail, or connect the two − rails with a wire.",
+   fb:["Resistors work in either direction, so it can’t be backwards.", "", "One resistor is enough for one LED. Follow the black wire to see where it goes."]}
+];
+function reviewBench(i){ const B = newBench(REVIEW[i].parts); B.power = true; return B; }
+M.review = {
+  init:()=>({i:0, bench:reviewBench(0), answered:false, missed:false, firstTry:0, picked:null, msg:"", cls:"msg", finished:false}),
+  render(box,s,S){
+    const R = REVIEW[S.i];
+    drawBench(S.bench);
+    if (S.finished){
+      box.innerHTML = `<div class="mission done"><p class="mission-h">Review complete!</p>
+        <p>You got <b>${S.firstTry} of ${REVIEW.length}</b> right on the first try${studentName ? `, ${esc(studentName)}` : ""}.</p>
+        <div class="row"><button type="button" id="rvAgain">Try the review again</button></div></div>`;
+      document.getElementById("rvAgain").onclick = ()=>{ delete MS[s.key]; clearMarks(); clearProbes(); refresh(); };
+      return;
+    }
+    box.innerHTML = `<div class="mission"><p class="mission-h">Example ${S.i+1} of ${REVIEW.length}</p>
+      <p><b>What’s wrong with this circuit?</b></p>
+      <div class="choices" role="group" aria-label="Answer choices">${R.opts.map((o,k)=>`<button type="button" class="choice${S.picked === k ? (k === R.answer ? " right" : " wrong") : ""}" data-opt="${k}" ${S.answered ? "disabled" : ""}>${o}</button>`).join("")}</div>
+      <p class="${S.cls}" aria-live="polite">${S.msg}</p>
+      ${S.answered ? `<div class="row"><button type="button" class="primary" id="rvNext">${S.i < REVIEW.length - 1 ? "Next example" : "See my score"}</button></div>` : ""}
+    </div>`;
+    box.querySelectorAll("[data-opt]").forEach(b=>b.onclick = ()=>{
+      const k = +b.dataset.opt; S.picked = k;
+      if (k === R.answer){ S.answered = true; if (!S.missed) S.firstTry++; S.cls = "msg good"; S.msg = "Correct! " + R.explain; }
+      else { S.missed = true; S.cls = "msg bad"; S.msg = "Not quite. " + R.fb[k]; }
+      refresh();
+      const f = document.getElementById("rvNext") || document.querySelector(`[data-opt="${k}"]`); if (f) f.focus();
+    });
+    const nx = document.getElementById("rvNext");
+    if (nx) nx.onclick = ()=>{
+      if (S.i >= REVIEW.length - 1) S.finished = true;
+      else { S.i++; S.bench = reviewBench(S.i); }
+      S.answered = false; S.missed = false; S.picked = null; S.msg = ""; S.cls = "msg";
+      clearMarks(); clearProbes(); refresh();
+      document.getElementById("stepTitle").focus({preventScroll:true});
+    };
+  }
 };
 
 M.recap = {
@@ -1221,11 +1391,16 @@ const steps = [
            <li>Electricity only flows in a full loop from + back to −.</li>
            <li>Resistors control the flow: the bigger the number, the less electricity. Never wire an LED without one.</li>
            <li>A push button opens and closes a gap in the loop, like a drawbridge.</li>
-         </ol>`}
+         </ol>
+         <p>Ready to test yourself? Press Next for the review.</p>`},
+  {key:"review", type:"review", title:"Review: What’s wrong?",
+   body:`<p>Each of these 5 circuits has one problem. Study the board, then pick the answer that explains what’s wrong.</p>
+         <p class="note">You can tap holes, use See underneath, or use the continuity tester to investigate.</p>`,
+   readout:"Study the circuit. What’s wrong with it?"}
 ];
 
 /* teacher notes are encrypted; the PIN unlocks them */
-const LOCKED = {salt:"rGuHeBVjhcRHPHTAmJdxVA==", iv:"35VppmlbvGKbDeLk", data:"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"};
+const LOCKED = {salt:"6SvGDRHBgrG8EE4nOWyNjw==", iv:"y98Qf2/3NdgQD/Ae", data:"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"};
 let NOTES = {};
 
 /* ---------- navigation ---------- */
@@ -1276,6 +1451,8 @@ function render(focusTitle){
   document.getElementById("stepBody").innerHTML = s.body;
   document.getElementById("interactive").innerHTML = "";
   clearMarks(); clearProbes(); clearRings();
+  pressHandler = null;
+  while (gBtnHits.firstChild) gBtnHits.removeChild(gBtnHits.firstChild);
   const B = benchOf(s); if (B) B.pending = null;
   if (s.xray) setXray(true);
   gChip.style.display = s.chip ? "" : "none";
