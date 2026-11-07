@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Robot Arm Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --page:#E6ECE6; --panel:#FFFFFF; --field:#F1F5F1; --ink:#17231D; --muted:#55645C; --line:#CBD5CD;
+  --yellow:#F2B705; --yellow-deep:#B98900; --on-yellow:#2B2100; --red:#D93D42; --good:#23845A;
+  --tab:#17231D; --on-tab:#F4F7F4;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --page:#101815; --panel:#18231E; --field:#202D27; --ink:#E2EAE5; --muted:#9AAAA1; --line:#2D3C35;
+    --good:#4BC489; --red:#F2676B; --tab:#E2EAE5; --on-tab:#101815; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --page:#101815; --panel:#18231E; --field:#202D27; --ink:#E2EAE5; --muted:#9AAAA1; --line:#2D3C35;
+  --good:#4BC489; --red:#F2676B; --tab:#E2EAE5; --on-tab:#101815; color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--page);color:var(--ink);font:16px/1.5 "Barlow",system-ui,-apple-system,"Segoe UI",sans-serif}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--page)}
+.wrap{max-width:1280px;margin:0 auto;padding:20px clamp(14px,3vw,32px) 40px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 32px;margin-bottom:16px}
+h1{font:700 clamp(2.2rem,5vw,3.4rem)/.95 "Barlow Condensed","Arial Narrow",sans-serif;margin:0;letter-spacing:-.01em}
+.lede{margin:6px 0 0;color:var(--muted);max-width:56ch}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.tabs button{font:600 1.05rem "Barlow Condensed","Arial Narrow",sans-serif;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:7px 14px;border-radius:999px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--tab);color:var(--on-tab);border-color:var(--tab)}
+.lab{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px;align-items:start}
+.stage{background:var(--page)}
+.mat{position:relative;border-radius:16px;overflow:hidden;background:#2E5E4E;box-shadow:0 0 0 1px rgba(0,0,0,.18)}
+canvas{display:block;width:100%;touch-action:manipulation}
+.warn{position:absolute;left:12px;top:12px;background:var(--red);color:#fff;font-weight:600;padding:4px 10px;border-radius:6px;font-size:.9rem}
+.readouts{display:flex;flex-wrap:wrap;gap:6px 22px;margin-top:10px;font-variant-numeric:tabular-nums}
+.readouts div{color:var(--muted)}
+.readouts b{color:var(--ink);font-weight:600}
+.toggles{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:6px;color:var(--muted)}
+.toggles label{display:inline-flex;gap:6px;align-items:center;cursor:pointer}
+.panel{display:flex;flex-direction:column;gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.card h2{font:700 1.45rem/1.1 "Barlow Condensed","Arial Narrow",sans-serif;margin:0 0 6px}
+.card p{margin:0 0 10px}
+.card p:last-child{margin-bottom:0}
+.muted{color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:transparent;color:var(--ink);padding:6px 14px;font:600 .95rem "Barlow",sans-serif;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--yellow);color:var(--on-yellow)}
+.rowhead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.joint{padding:10px 0;border-top:1px solid var(--line)}
+.joint label{display:flex;justify-content:space-between;align-items:center;font-weight:600}
+.sym{font-weight:500;color:var(--muted);margin-left:4px}
+kbd{font:600 .75rem "Barlow",sans-serif;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;color:var(--muted);background:var(--field)}
+.jctl{display:flex;align-items:center;gap:10px;margin-top:4px}
+input[type=range]{flex:1;accent-color:var(--yellow-deep);min-width:0}
+input[type=number]{width:72px;font:500 1rem "Barlow",sans-serif;padding:5px 6px;border:1px solid var(--line);border-radius:6px;background:var(--field);color:var(--ink);font-variant-numeric:tabular-nums}
+.locked .jctl{opacity:.45}
+.btn{font:600 1rem "Barlow",sans-serif;border-radius:8px;padding:8px 14px;cursor:pointer;border:1px solid var(--line);background:var(--field);color:var(--ink)}
+.btn.primary{background:var(--yellow);border-color:var(--yellow-deep);color:var(--on-yellow)}
+.btn[aria-pressed="true"]{background:var(--tab);color:var(--on-tab);border-color:var(--tab)}
+.btns{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.stats{display:flex;gap:22px;margin:10px 0;font-variant-numeric:tabular-nums}
+.stats div{display:flex;flex-direction:column}
+.stats b{font:700 1.8rem/1 "Barlow Condensed",sans-serif}
+.stats span{color:var(--muted);font-size:.85rem}
+.msg{min-height:1.5em;margin-top:10px;font-weight:500}
+.msg.good{color:var(--good)}
+.msg.bad{color:var(--red)}
+.target{font:600 1.2rem "Barlow Condensed",sans-serif;font-variant-numeric:tabular-nums;margin:4px 0 10px}
+.ikin{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px}
+.ikin label{display:flex;flex-direction:column;font-size:.9rem;color:var(--muted)}
+details{border-top:1px solid var(--line);padding-top:10px;margin-top:12px}
+summary{cursor:pointer;font-weight:600}
+.math{font-size:.95rem;line-height:1.65}
+.math ol{padding-left:1.2em;margin:8px 0}
+.math li{margin-bottom:6px}
+.eq{display:block;background:var(--field);border-radius:6px;padding:4px 8px;margin:3px 0;font-variant-numeric:tabular-nums;overflow-x:auto;white-space:nowrap}
+.hidden{display:none !important}
+:focus-visible{outline:3px solid var(--yellow-deep);outline-offset:2px}
+@media (max-width:900px){
+  .lab{grid-template-columns:1fr}
+  .stage{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;padding-bottom:6px}
+  .toggles{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Robot Arm Lab</h1>
+      <p class="lede">Bend the joints to steer the gripper. Touch targets, stack a tower, then work out the exact angles with math.</p>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Activity">
+      <button role="tab" data-mode="free" aria-selected="true">Free move</button>
+      <button role="tab" data-mode="reach" aria-selected="false">Reach targets</button>
+      <button role="tab" data-mode="stack" aria-selected="false">Stack blocks</button>
+      <button role="tab" data-mode="ik" aria-selected="false">Solve the angles</button>
+    </div>
+  </header>
+
+  <main class="lab">
+    <section class="stage">
+      <div class="mat">
+        <canvas id="cv" role="img" aria-label="Robot arm on a grid. The shoulder is at the origin; units are centimeters."></canvas>
+        <div class="warn" id="warn" hidden>The arm is pushing into the table</div>
+      </div>
+      <div class="readouts" aria-live="off">
+        <div>Gripper x <b id="rx">0</b> cm</div>
+        <div>Gripper y <b id="ry">0</b> cm</div>
+        <div id="rphiWrap">Gripper points <b id="rphi">0</b>°</div>
+      </div>
+      <div class="toggles">
+        <label><input type="checkbox" id="tAngles" checked> Show angles</label>
+        <label><input type="checkbox" id="tReach"> Show reach</label>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <div class="card" id="task-free">
+        <h2>Free move</h2>
+        <p>Each slider turns one joint. Watch how the gripper’s x and y change as you move them.</p>
+        <p class="muted">Try this: get the gripper to (10, 10). Can you find two different ways to do it? What changes about the elbow?</p>
+      </div>
+
+      <div class="card hidden" id="task-reach">
+        <h2>Reach targets</h2>
+        <p>Touch each red target with the gripper. A new one appears as soon as you hit it.</p>
+        <div class="stats">
+          <div><b id="score">0</b><span>targets</span></div>
+          <div><b id="tnow">0.0</b><span>seconds</span></div>
+          <div><b id="tbest">–</b><span>best time</span></div>
+        </div>
+        <div class="btns"><button class="btn" id="skip">Skip target</button><span class="muted" id="tdist"></span></div>
+      </div>
+
+      <div class="card hidden" id="task-stack">
+        <h2>Stack blocks</h2>
+        <p>Build a tower of all three blocks on the striped pad. Put the gripper on a block, close it, carry the block over, then open the gripper to drop it.</p>
+        <p class="muted">Drop a block off-center and it slides off the one below.</p>
+        <div class="stats">
+          <div><b id="height">0</b><span>tower height</span></div>
+          <div><b id="stime">0.0</b><span>seconds</span></div>
+        </div>
+        <div class="btns"><button class="btn" id="resetBlocks">Reset blocks</button></div>
+        <div class="msg" id="stackMsg" aria-live="polite"></div>
+      </div>
+
+      <div class="card hidden" id="task-ik">
+        <h2>Solve the angles</h2>
+        <p>The sliders are locked. Calculate the joint angles that put the gripper on the target, type them in, and see if you’re right.</p>
+        <div class="target" id="ikTarget">Target</div>
+        <div class="ikin" id="ikin"></div>
+        <div class="btns">
+          <button class="btn primary" id="ikTry">Try my angles</button>
+          <button class="btn" id="ikNew">New target</button>
+        </div>
+        <div class="msg" id="ikMsg" aria-live="polite"></div>
+        <p class="muted" style="margin-top:8px">Tap the mat to choose your own target.</p>
+        <details class="math">
+          <summary>Hint: the math</summary>
+          <div id="mathGeneral"></div>
+        </details>
+        <details class="math" id="workedBox">
+          <summary>Worked solution for this target</summary>
+          <div id="mathWorked"></div>
+        </details>
+      </div>
+
+      <div class="card" id="controls">
+        <div class="rowhead">
+          <h2 style="margin:0">Arm controls</h2>
+          <div class="seg" role="group" aria-label="Number of joints">
+            <button data-n="2" aria-pressed="true">2 joints</button>
+            <button data-n="3" aria-pressed="false">3 joints</button>
+          </div>
+        </div>
+        <div id="joints"></div>
+        <div class="btns" style="border-top:1px solid var(--line);padding-top:12px">
+          <button class="btn" id="grip" aria-pressed="false">Close gripper</button>
+          <span class="muted"><kbd>G</kbd> toggles the gripper</span>
+        </div>
+        <p class="muted hidden" id="lockNote" style="margin-top:10px">Controls unlock when you leave Solve the angles.</p>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<script>
+(() => {
+const D2R = Math.PI / 180, R2D = 180 / Math.PI;
+const L = [12, 10, 5];                 // link lengths in cm
+const S = 4;                           // block size in cm
+const ZONE = { x0: 12, x1: 18 };
+const RANGE = [[0, 180], [-160, 160], [-160, 160]];
+const NAMES = ['Shoulder', 'Elbow', 'Wrist'];
+const KEYS = [['q', 'a'], ['w', 's'], ['e', 'd']];
+const W = { x0: -24, x1: 31, y0: -3, y1: 29 };   // visible world, cm
+const BLOCK_COLORS = [['#2BB3C0', 'teal'], ['#E5484D', 'coral'], ['#9B7BE0', 'violet']];
+
+const st = { n: 2, a: [70, -70, -20], grip: false, gripW: 2.6, held: null, mode: 'free',
+  showAngles: true, showReach: false, anim: null };
+let blocks = [], target = null, flashes = [];
+let score = 0, targetStart = 0, best = null;
+let stackStart = null, stackDone = false;
+const pressed = new Set();
+
+const $ = id => document.getElementById(id);
+const cv = $('cv'), ctx = cv.getContext('2d');
+let scale = 10, dpr = 1;
+
+// ---------- math ----------
+const norm = d => { d = ((d + 180) % 360 + 360) % 360 - 180; return d === -180 ? 180 : d; };
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+const dist = (p, q) => Math.hypot(p.x - q.x, p.y - q.y);
+
+function fk(a, n = st.n) {
+  const pts = [{ x: 0, y: 0 }]; let sum = 0, x = 0, y = 0;
+  for (let i = 0; i < n; i++) {
+    sum += a[i] * D2R; x += L[i] * Math.cos(sum); y += L[i] * Math.sin(sum); pts.push({ x, y });
+  }
+  return { pts, phi: norm(sum * R2D) };
+}
+function solve2(x, y) {
+  const c = (x * x + y * y - L[0] ** 2 - L[1] ** 2) / (2 * L[0] * L[1]);
+  if (Math.abs(c) > 1 + 1e-9) return null;
+  const out = [];
+  for (const s of [1, -1]) {
+    const t2 = s * Math.acos(clamp(c, -1, 1));
+    const t1 = Math.atan2(y, x) - Math.atan2(L[1] * Math.sin(t2), L[0] + L[1] * Math.cos(t2));
+    out.push([norm(t1 * R2D), norm(t2 * R2D)]);
+  }
+  return out;
+}
+function solve(t) {
+  if (st.n === 2) return solve2(t.x, t.y);
+  const wx = t.x - L[2] * Math.cos(t.phi * D2R), wy = t.y - L[2] * Math.sin(t.phi * D2R);
+  const s = solve2(wx, wy);
+  return s && s.map(([a, b]) => [a, b, norm(t.phi - a - b)]);
+}
+const inRange = sol => sol.every((v, i) => v >= RANGE[i][0] - 1e-6 && v <= RANGE[i][1] + 1e-6);
+function poseOK(a) {
+  const k = fk(a);
+  return k.pts.slice(1).every(p => p.y > 1) && Math.hypot(k.pts.at(-1).x, k.pts.at(-1).y) > 4;
+}
+function randomPose() {
+  for (let i = 0; i < 400; i++) {
+    const a = [15 + Math.random() * 150, -150 + Math.random() * 300, -150 + Math.random() * 300];
+    if (poseOK(a)) { const k = fk(a); return { a, tip: k.pts.at(-1), phi: k.phi }; }
+  }
+  return { a: [90, -45, -45], tip: fk([90, -45, -45]).pts.at(-1), phi: 0 };
+}
+
+// ---------- joint controls ----------
+const sliders = [], nums = [];
+for (let i = 0; i < 3; i++) {
+  const row = document.createElement('div');
+  row.className = 'joint'; row.id = 'joint' + i;
+  row.innerHTML = `<label for="s${i}"><span>${NAMES[i]}<span class="sym">θ${i + 1}</span></span>
+    <span><kbd>${KEYS[i][0].toUpperCase()}</kbd> <kbd>${KEYS[i][1].toUpperCase()}</kbd></span></label>
+    <div class="jctl"><input type="range" id="s${i}" min="${RANGE[i][0]}" max="${RANGE[i][1]}" step="1">
+    <input type="number" id="n${i}" min="${RANGE[i][0]}" max="${RANGE[i][1]}" step="1" aria-label="${NAMES[i]} angle in degrees"><span>°</span></div>`;
+  $('joints').appendChild(row);
+  sliders[i] = row.querySelector('input[type=range]');
+  nums[i] = row.querySelector('input[type=number]');
+  sliders[i].addEventListener('input', () => setAngle(i, +sliders[i].value));
+  nums[i].addEventListener('change', () => { if (nums[i].value !== '') setAngle(i, +nums[i].value); syncUI(); });
+}
+function setAngle(i, v) { st.a[i] = clamp(v, RANGE[i][0], RANGE[i][1]); syncUI(i); }
+function syncUI(skipNum) {
+  for (let i = 0; i < 3; i++) {
+    const r = Math.round(st.a[i]);
+    if (+sliders[i].value !== r) sliders[i].value = r;
+    if (document.activeElement !== nums[i] && +nums[i].value !== r) nums[i].value = r;
+  }
+}
+function setLocked(lock) {
+  $('controls').classList.toggle('locked', lock);
+  $('lockNote').classList.toggle('hidden', !lock);
+  for (let i = 0; i < 3; i++) { sliders[i].disabled = lock; nums[i].disabled = lock; }
+  $('grip').disabled = lock;
+}
+
+// ---------- joints toggle ----------
+document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
+  st.n = +b.dataset.n;
+  document.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', x === b));
+  $('joint2').classList.toggle('hidden', st.n === 2);
+  $('rphiWrap').classList.toggle('hidden', st.n === 2);
+  if (st.held) dropHeld();
+  if (st.mode === 'reach') spawnReach();
+  if (st.mode === 'ik') { buildIkInputs(); newIkTarget(); renderGeneralMath(); }
+}));
+$('joint2').classList.add('hidden');
+$('rphiWrap').classList.add('hidden');
+
+// ---------- gripper ----------
+$('grip').addEventListener('click', toggleGrip);
+function toggleGrip() {
+  if (st.mode === 'ik') return;
+  st.grip = !st.grip;
+  $('grip').textContent = st.grip ? 'Open gripper' : 'Close gripper';
+  $('grip').setAttribute('aria-pressed', st.grip);
+  if (st.mode !== 'stack') return;
+  if (st.grip) {
+    const tip = fk(st.a).pts.at(-1);
+    const b = blocks.filter(b => !b.falling && isTop(b) && dist(tip, b) < 2.3)
+      .sort((p, q) => dist(tip, p) - dist(tip, q))[0];
+    if (b) {
+      st.held = b; b.held = true;
+      if (stackStart === null) stackStart = performance.now();
+      stackMsg(`Holding the ${b.name} block.`);
+    } else stackMsg('Nothing to grab. Put the gripper right on a block first.', 'bad');
+  } else if (st.held) dropHeld();
+}
+function isTop(b) {
+  return !blocks.some(o => o !== b && !o.held && Math.abs(o.x - b.x) < S - 0.05 && o.restY > b.restY + 0.1);
+}
+
+// ---------- blocks ----------
+function resetBlocks() {
+  blocks = BLOCK_COLORS.map(([c, name], i) => ({ x: -17 + i * 5, y: S / 2, restY: S / 2, color: c, name, held: false, falling: false, vy: 0 }));
+  st.held = null; stackStart = null; stackDone = false;
+  if (st.grip) toggleGrip();
+  $('height').textContent = '0'; $('stime').textContent = '0.0'; stackMsg('');
+}
+function dropHeld() {
+  const b = st.held; st.held = null; b.held = false;
+  b.x = clamp(b.x, W.x0 + S, W.x1 - S);
+  let slid = false;
+  for (let t = 0; t < 8; t++) {
+    let top = 0, sup = null;
+    for (const o of blocks) {
+      if (o === b || o.held || o.falling) continue;
+      if (Math.abs(b.x - o.x) < S - 0.05 && o.restY < b.y + 0.01) {
+        const tt = o.restY + S / 2; if (tt > top) { top = tt; sup = o; }
+      }
+    }
+    if (sup && Math.abs(b.x - sup.x) > S * 0.5) { b.x = sup.x + Math.sign(b.x - sup.x || 1) * S; slid = true; continue; }
+    b.restY = top + S / 2; break;
+  }
+  if (b.y <= b.restY) { b.y = b.restY; afterSettle(); } else { b.falling = true; b.vy = 0; }
+  stackMsg(slid ? 'That block hung over the edge and slid off. Center it on the one below.' : '', slid ? 'bad' : '');
+}
+function towerHeight() {
+  let h = 0;
+  for (const b of blocks) if (!b.held && !b.falling && b.x >= ZONE.x0 && b.x <= ZONE.x1)
+    h = Math.max(h, Math.round((b.restY - S / 2) / S) + 1);
+  return h;
+}
+function afterSettle() {
+  const h = towerHeight();
+  $('height').textContent = h;
+  if (h >= 3 && !stackDone) {
+    stackDone = true;
+    const secs = ((performance.now() - stackStart) / 1000).toFixed(1);
+    stackMsg(`Tower complete in ${secs} seconds. Reset and try to beat it.`, 'good');
+    flashes.push({ x: (ZONE.x0 + ZONE.x1) / 2, y: S * 3, t: 0 });
+  }
+}
+function stackMsg(t, cls = '') { const m = $('stackMsg'); m.textContent = t; m.className = 'msg ' + cls; }
+$('resetBlocks').addEventListener('click', resetBlocks);
+
+// ---------- reach ----------
+function spawnReach() {
+  const tip = fk(st.a).pts.at(-1);
+  let p;
+  for (let i = 0; i < 60; i++) { p = randomPose(); if (dist(p.tip, tip) > 7) break; }
+  target = { x: p.tip.x, y: p.tip.y };
+  targetStart = performance.now();
+}
+$('skip').addEventListener('click', spawnReach);
+
+// ---------- inverse kinematics challenge ----------
+const ikIns = [];
+function buildIkInputs() {
+  const box = $('ikin'); box.innerHTML = '';
+  for (let i = 0; i < st.n; i++) {
+    const l = document.createElement('label');
+    l.innerHTML = `θ${i + 1} (${NAMES[i].toLowerCase()}) <input type="number" step="0.1" id="ik${i}">`;
+    box.appendChild(l); ikIns[i] = l.querySelector('input');
+    ikIns[i].addEventListener('keydown', e => { if (e.key === 'Enter') tryIk(); });
+  }
+}
+function setIkTarget(t) {
+  target = t;
+  const f = v => v.toFixed(1);
+  $('ikTarget').textContent = st.n === 3
+    ? `Target (${f(t.x)}, ${f(t.y)}), gripper pointing ${t.phi}°`
+    : `Target (${f(t.x)}, ${f(t.y)})`;
+  ikIns.forEach(i => i && (i.value = ''));
+  $('ikMsg').textContent = ''; $('ikMsg').className = 'msg';
+  $('workedBox').open = false;
+  renderWorked();
+}
+function newIkTarget() {
+  for (let i = 0; i < 200; i++) {
+    const p = randomPose();
+    const t = { x: Math.round(p.tip.x * 10) / 10, y: Math.round(p.tip.y * 10) / 10, phi: Math.round(p.phi) };
+    const s = solve(t);
+    if (s && s.some(inRange)) { setIkTarget(t); return; }
+  }
+}
+function tryIk() {
+  const vals = [];
+  for (let i = 0; i < st.n; i++) {
+    const v = ikIns[i].value.trim();
+    if (v === '' || isNaN(+v)) return ikMsg(`Enter a number for θ${i + 1}.`, 'bad');
+    vals.push(+v);
+  }
+  for (let i = 0; i < st.n; i++) if (vals[i] < RANGE[i][0] || vals[i] > RANGE[i][1])
+    return ikMsg(`θ${i + 1} has to be between ${RANGE[i][0]}° and ${RANGE[i][1]}° on this arm. There’s a second solution; try that one.`, 'bad');
+  ikMsg('Moving…');
+  animateTo(vals, () => {
+    const k = fk(st.a), d = dist(k.pts.at(-1), target);
+    const pe = st.n === 3 ? Math.abs(norm(k.phi - target.phi)) : 0;
+    if (d < 0.5 && pe < 3) { ikMsg(`Nailed it. The gripper is ${d.toFixed(2)} cm from the target.`, 'good'); flashes.push({ x: target.x, y: target.y, t: 0 }); }
+    else if (d < 0.5) ikMsg(`Right spot, wrong pointing angle (off by ${pe.toFixed(0)}°). Check θ3 = φ − θ1 − θ2.`, 'bad');
+    else ikMsg(`Off by ${d.toFixed(1)} cm. Check the sign of θ2, and make sure your calculator is in degrees.`, 'bad');
+  });
+}
+function ikMsg(t, cls = '') { const m = $('ikMsg'); m.textContent = t; m.className = 'msg ' + cls; }
+$('ikTry').addEventListener('click', tryIk);
+$('ikNew').addEventListener('click', newIkTarget);
+
+function renderGeneralMath() {
+  const three = st.n === 3;
+  $('mathGeneral').innerHTML = `
+  <p>The shoulder sits at (0, 0). Link lengths: L1 = ${L[0]} cm, L2 = ${L[1]} cm${three ? `, L3 = ${L[2]} cm` : ''}. Angles are counterclockwise; θ2${three ? ' and θ3 are' : ' is'} measured from the link before it.</p>
+  <ol>
+    ${three ? `<li>Back up from the target to find the wrist point. The last link points at angle φ:
+      <span class="eq">xw = x − L3·cos φ &nbsp;&nbsp; yw = y − L3·sin φ</span>Use (xw, yw) as the point in steps 2–4.</li>` : ''}
+    <li>The shoulder, elbow, and gripper form a triangle. The law of cosines gives the elbow bend:
+      <span class="eq">cos θ2 = (x² + y² − L1² − L2²) ÷ (2·L1·L2)</span></li>
+    <li>Take the inverse cosine. Both signs work, so there are two ways to bend the elbow:
+      <span class="eq">θ2 = ± arccos(…)</span></li>
+    <li>Point the shoulder at the target, then correct for the elbow bend:
+      <span class="eq">θ1 = atan2(y, x) − atan2(L2·sin θ2, L1 + L2·cos θ2)</span></li>
+    ${three ? `<li>The wrist makes up the rest of the pointing angle:<span class="eq">θ3 = φ − θ1 − θ2</span></li>` : ''}
+  </ol>
+  <p class="muted">atan2(y, x) is an arctangent that knows which quadrant the point is in. In Java it’s <code>Math.atan2(y, x)</code> and it returns radians, so wrap it in <code>Math.toDegrees</code>. Spreadsheets flip the order: <code>ATAN2(x, y)</code>.</p>`;
+}
+function renderWorked() {
+  const t = target; if (!t || st.mode !== 'ik') return;
+  const f = v => v.toFixed(2), three = st.n === 3;
+  let x = t.x, y = t.y, h = '<ol>';
+  if (three) {
+    x = t.x - L[2] * Math.cos(t.phi * D2R); y = t.y - L[2] * Math.sin(t.phi * D2R);
+    h += `<li>Wrist point:<span class="eq">xw = ${t.x} − 5·cos(${t.phi}°) = ${f(x)}</span><span class="eq">yw = ${t.y} − 5·sin(${t.phi}°) = ${f(y)}</span></li>`;
+  }
+  const c = (x * x + y * y - 144 - 100) / 240;
+  h += `<li><span class="eq">cos θ2 = (${f(x)}² + ${f(y)}² − 144 − 100) ÷ 240 = ${c.toFixed(4)}</span></li>`;
+  const sols = solve(t);
+  h += `<li><span class="eq">θ2 = ± arccos(${c.toFixed(4)}) = ± ${f(Math.abs(sols[0][1]))}°</span></li>`;
+  h += `<li><span class="eq">atan2(${f(y)}, ${f(x)}) = ${f(Math.atan2(y, x) * R2D)}°</span>Plug each θ2 into the θ1 formula.</li></ol>`;
+  sols.forEach((s, i) => {
+    const ok = inRange(s);
+    h += `<p><b>Solution ${i === 0 ? 'A' : 'B'}</b> (θ2 ${s[1] >= 0 ? 'positive' : 'negative'}): θ1 = ${s[0].toFixed(1)}°, θ2 = ${s[1].toFixed(1)}°${three ? `, θ3 = ${s[2].toFixed(1)}°` : ''}${ok ? '' : ' <span class="muted">(outside this arm’s joint limits)</span>'}</p>`;
+  });
+  $('mathWorked').innerHTML = h;
+}
+
+// ---------- animation ----------
+function animateTo(to, done) {
+  st.anim = { from: st.a.slice(), to: to.concat(st.a.slice(to.length)), t: 0, done };
+}
+const ease = t => t < .5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
+
+// ---------- modes ----------
+document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+function setMode(m) {
+  if (st.held) dropHeld();
+  if (st.grip) toggleGrip();
+  st.mode = m; target = null; st.anim = null;
+  document.querySelectorAll('.tabs button').forEach(x => x.setAttribute('aria-selected', x.dataset.mode === m));
+  ['free', 'reach', 'stack', 'ik'].forEach(k => $('task-' + k).classList.toggle('hidden', k !== m));
+  setLocked(m === 'ik');
+  if (m === 'reach') { score = 0; best = null; $('score').textContent = '0'; $('tbest').textContent = '–'; spawnReach(); }
+  if (m === 'stack') resetBlocks();
+  if (m === 'ik') { buildIkInputs(); renderGeneralMath(); newIkTarget(); }
+}
+
+// ---------- canvas input ----------
+cv.addEventListener('click', e => {
+  if (st.mode !== 'ik') return;
+  const r = cv.getBoundingClientRect();
+  const x = W.x0 + (e.clientX - r.left) / scale, y = W.y1 - (e.clientY - r.top) / scale;
+  const t = { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, phi: -90 };
+  if (t.y < 0.5) return ikMsg('Pick a point above the table.', 'bad');
+  const s = solve(t);
+  if (!s) { st.showReach = true; $('tReach').checked = true; return ikMsg('That point is out of reach. The dashed rings show how far the arm can go.', 'bad'); }
+  setIkTarget(t);
+  if (!s.some(inRange)) ikMsg('Reachable on paper, but both solutions break a joint limit. Try another point.', 'bad');
+});
+$('tAngles').addEventListener('change', e => st.showAngles = e.target.checked);
+$('tReach').addEventListener('change', e => st.showReach = e.target.checked);
+
+window.addEventListener('keydown', e => {
+  const el = document.activeElement;
+  if (e.ctrlKey || e.metaKey || e.altKey || (el && el.tagName === 'INPUT' && el.type === 'number')) return;
+  const k = e.key.toLowerCase();
+  if (k === 'g' && !e.repeat) { toggleGrip(); return; }
+  if (st.mode !== 'ik' && KEYS.flat().includes(k)) { pressed.add(k); e.preventDefault(); }
+});
+window.addEventListener('keyup', e => pressed.delete(e.key.toLowerCase()));
+window.addEventListener('blur', () => pressed.clear());
+
+// ---------- drawing ----------
+function resize() {
+  dpr = window.devicePixelRatio || 1;
+  const w = cv.parentElement.clientWidth;
+  scale = w / (W.x1 - W.x0);
+  const h = scale * (W.y1 - W.y0);
+  cv.style.height = h + 'px';
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+}
+new ResizeObserver(resize).observe(cv.parentElement);
+const X = x => (x - W.x0) * scale, Y = y => (W.y1 - y) * scale;
+
+function drawMat() {
+  const w = cv.width / dpr, h = cv.height / dpr;
+  ctx.fillStyle = '#2E5E4E'; ctx.fillRect(0, 0, w, h);
+  for (let x = Math.ceil(W.x0); x <= W.x1; x++) {
+    ctx.strokeStyle = x % 5 === 0 ? 'rgba(255,255,255,.2)' : 'rgba(255,255,255,.07)';
+    ctx.lineWidth = x === 0 ? 1.5 : 1;
+    ctx.beginPath(); ctx.moveTo(X(x), 0); ctx.lineTo(X(x), Y(0)); ctx.stroke();
+  }
+  for (let y = 1; y <= W.y1; y++) {
+    ctx.strokeStyle = y % 5 === 0 ? 'rgba(255,255,255,.2)' : 'rgba(255,255,255,.07)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, Y(y)); ctx.lineTo(w, Y(y)); ctx.stroke();
+  }
+  // table
+  ctx.fillStyle = '#21463A'; ctx.fillRect(0, Y(0), w, h - Y(0));
+  ctx.strokeStyle = 'rgba(255,255,255,.45)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, Y(0)); ctx.lineTo(w, Y(0)); ctx.stroke();
+  // labels
+  const fs = Math.max(10, scale * 1.05);
+  ctx.font = `500 ${fs}px "Barlow Condensed", "Arial Narrow", sans-serif`;
+  ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (let x = -20; x <= 30; x += 5) ctx.fillText(x, X(x), Y(-1.5));
+  ctx.textAlign = 'left';
+  for (let y = 5; y <= 25; y += 5) ctx.fillText(y, X(W.x0 + 0.5), Y(y));
+}
+function drawZone() {
+  const x0 = X(ZONE.x0), x1 = X(ZONE.x1), y = Y(0), hh = scale * 0.7;
+  ctx.save(); ctx.beginPath(); ctx.rect(x0, y, x1 - x0, hh); ctx.clip();
+  ctx.fillStyle = '#F2B705'; ctx.fillRect(x0, y, x1 - x0, hh);
+  ctx.strokeStyle = '#1C1C1C'; ctx.lineWidth = scale * 0.45;
+  for (let i = -2; i < 12; i++) { ctx.beginPath(); ctx.moveTo(x0 + i * scale, y + hh); ctx.lineTo(x0 + i * scale + hh, y); ctx.stroke(); }
+  ctx.restore();
+  ctx.setLineDash([scale * .5, scale * .5]); ctx.strokeStyle = 'rgba(242,183,5,.5)'; ctx.lineWidth = 1.5;
+  const cx = (ZONE.x0 + ZONE.x1) / 2;
+  ctx.strokeRect(X(cx - S / 2), Y(S * 3), S * scale, S * 3 * scale);
+  ctx.setLineDash([]);
+}
+function drawBlock(b) {
+  const x = X(b.x - S / 2), y = Y(b.y + S / 2), s = S * scale, r = scale * .35;
+  ctx.beginPath(); ctx.roundRect(x, y, s, s, r);
+  ctx.fillStyle = b.color; ctx.fill();
+  ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(0,0,0,.4)'; ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.22)'; ctx.fillRect(x + s * .14, y + s * .14, s * .3, s * .1);
+}
+function drawTarget(t, now) {
+  const x = X(t.x), y = Y(t.y);
+  [[1.6, '#E5484D'], [1.05, '#FFFFFF'], [0.55, '#E5484D']].forEach(([r, c]) => {
+    ctx.beginPath(); ctx.arc(x, y, r * scale, 0, Math.PI * 2); ctx.fillStyle = c; ctx.fill();
+  });
+  if (st.mode === 'ik' && st.n === 3) {
+    const a = -t.phi * D2R, len = 4.2 * scale, bx = x - Math.cos(a) * len, by = y - Math.sin(a) * len;
+    ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 2; ctx.setLineDash([5, 4]);
+    ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(x - Math.cos(a) * 1.8 * scale, y - Math.sin(a) * 1.8 * scale); ctx.stroke(); ctx.setLineDash([]);
+    const hx = x - Math.cos(a) * 1.8 * scale, hy = y - Math.sin(a) * 1.8 * scale, hs = scale * .9;
+    ctx.beginPath(); ctx.moveTo(hx, hy);
+    ctx.lineTo(hx - Math.cos(a - .5) * hs, hy - Math.sin(a - .5) * hs);
+    ctx.lineTo(hx - Math.cos(a + .5) * hs, hy - Math.sin(a + .5) * hs); ctx.closePath();
+    ctx.fillStyle = '#FFFFFF'; ctx.fill();
+  }
+}
+function drawReach() {
+  ctx.setLineDash([scale * .6, scale * .5]); ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 1.5;
+  const outer = st.n === 2 ? L[0] + L[1] : L[0] + L[1] + L[2];
+  const inner = st.n === 2 ? Math.abs(L[0] - L[1]) : 0;
+  ctx.beginPath(); ctx.arc(X(0), Y(0), outer * scale, 0, Math.PI, true); ctx.stroke();
+  if (inner) { ctx.beginPath(); ctx.arc(X(0), Y(0), inner * scale, 0, Math.PI, true); ctx.stroke(); }
+  ctx.setLineDash([]);
+}
+function arcLabel(p, startDeg, sweepDeg, r, text) {
+  ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath(); ctx.moveTo(X(p.x), Y(p.y));
+  ctx.lineTo(X(p.x + Math.cos(startDeg * D2R) * (r + 2)), Y(p.y + Math.sin(startDeg * D2R) * (r + 2))); ctx.stroke();
+  ctx.setLineDash([]);
+  if (Math.abs(sweepDeg) > 0.5) {
+    ctx.beginPath();
+    ctx.arc(X(p.x), Y(p.y), r * scale, -startDeg * D2R, -(startDeg + sweepDeg) * D2R, sweepDeg > 0);
+    ctx.stroke();
+  }
+  const mid = (startDeg + sweepDeg / 2) * D2R, lr = r + 1.9;
+  ctx.font = `600 ${Math.max(11, scale * 1.15)}px "Barlow Condensed", "Arial Narrow", sans-serif`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const tx = X(p.x + Math.cos(mid) * lr), ty = Y(p.y + Math.sin(mid) * lr);
+  const w = ctx.measureText(text).width + 8;
+  ctx.fillStyle = 'rgba(20,40,32,.75)'; ctx.beginPath(); ctx.roundRect(tx - w / 2, ty - scale * .75, w, scale * 1.5, 4); ctx.fill();
+  ctx.fillStyle = '#FFFFFF'; ctx.fillText(text, tx, ty);
+}
+function drawArm(k) {
+  const pts = k.pts, n = st.n;
+  // base
+  ctx.fillStyle = '#4A5852'; ctx.strokeStyle = '#18201C'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(X(0), Y(0), 2.8 * scale, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+  const widths = [1.7, 1.35, 1.0];
+  let dir = 0;
+  for (let i = 0; i < n; i++) {
+    const a = pts[i], b = pts[i + 1];
+    dir = Math.atan2(b.y - a.y, b.x - a.x);
+    let ex = b.x, ey = b.y;
+    if (i === n - 1) { ex -= Math.cos(dir) * 1.4; ey -= Math.sin(dir) * 1.4; }
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#2B2100'; ctx.lineWidth = widths[i] * scale + 3;
+    ctx.beginPath(); ctx.moveTo(X(a.x), Y(a.y)); ctx.lineTo(X(ex), Y(ey)); ctx.stroke();
+    ctx.strokeStyle = '#F2B705'; ctx.lineWidth = widths[i] * scale;
+    ctx.beginPath(); ctx.moveTo(X(a.x), Y(a.y)); ctx.lineTo(X(ex), Y(ey)); ctx.stroke();
+  }
+  // gripper
+  const tip = pts[n], c = Math.cos(dir), s = Math.sin(dir), px = -s, py = c, gw = st.gripW;
+  const palm = { x: tip.x - c * 1.4, y: tip.y - s * 1.4 };
+  ctx.lineCap = 'round'; ctx.strokeStyle = '#18201C'; ctx.lineWidth = scale * .55 + 2;
+  const seg = (x1, y1, x2, y2) => { ctx.beginPath(); ctx.moveTo(X(x1), Y(y1)); ctx.lineTo(X(x2), Y(y2)); ctx.stroke(); };
+  const fingers = () => {
+    seg(palm.x + px * gw, palm.y + py * gw, palm.x - px * gw, palm.y - py * gw);
+    for (const sg of [1, -1]) seg(palm.x + px * gw * sg, palm.y + py * gw * sg, palm.x + px * gw * sg + c * 2.8, palm.y + py * gw * sg + s * 2.8);
+  };
+  fingers();
+  ctx.strokeStyle = '#D5DCD8'; ctx.lineWidth = scale * .55; fingers();
+  // joints
+  for (let i = 0; i < n; i++) {
+    const p = pts[i];
+    ctx.beginPath(); ctx.arc(X(p.x), Y(p.y), scale * (i === 0 ? 1.25 : 1.0), 0, Math.PI * 2);
+    ctx.fillStyle = '#1E2A25'; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = '#F2B705'; ctx.stroke();
+  }
+  // grab point
+  ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1.5;
+  const tx = X(tip.x), ty = Y(tip.y), m = scale * .55;
+  ctx.beginPath(); ctx.moveTo(tx - m, ty); ctx.lineTo(tx + m, ty); ctx.moveTo(tx, ty - m); ctx.lineTo(tx, ty + m); ctx.stroke();
+}
+function drawAngles(k) {
+  const pts = k.pts; let ref = 0;
+  const r = [3.6, 2.8, 2.2];
+  for (let i = 0; i < st.n; i++) {
+    arcLabel(pts[i], ref, st.a[i], r[i], `θ${i + 1} ${Math.round(st.a[i])}°`);
+    ref += st.a[i];
+  }
+}
+function drawFlashes(dt) {
+  flashes = flashes.filter(f => (f.t += dt) < 0.6);
+  for (const f of flashes) {
+    ctx.beginPath(); ctx.arc(X(f.x), Y(f.y), (1.6 + f.t * 8) * scale, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(255,255,255,${1 - f.t / 0.6})`; ctx.lineWidth = 3; ctx.stroke();
+  }
+}
+
+// ---------- loop ----------
+let last = performance.now(), lastTxt = {};
+function setTxt(id, v) { if (lastTxt[id] !== v) { lastTxt[id] = v; $(id).textContent = v; } }
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  for (let i = 0; i < st.n; i++) {
+    let d = 0;
+    if (pressed.has(KEYS[i][0])) d += 1;
+    if (pressed.has(KEYS[i][1])) d -= 1;
+    if (d && !st.anim) setAngle(i, st.a[i] + d * 60 * dt);
+  }
+  if (st.anim) {
+    const A = st.anim; A.t = Math.min(1, A.t + dt / 0.9);
+    const e = ease(A.t);
+    for (let i = 0; i < 3; i++) st.a[i] = A.from[i] + (A.to[i] - A.from[i]) * e;
+    syncUI();
+    if (A.t >= 1) { st.anim = null; A.done && A.done(); }
+  }
+  st.gripW += ((st.grip ? (st.held ? 2.1 : 0.5) : 2.6) - st.gripW) * Math.min(1, dt * 14);
+  for (const b of blocks) if (b.falling) {
+    b.vy += 70 * dt; b.y -= b.vy * dt;
+    if (b.y <= b.restY) { b.y = b.restY; b.falling = false; afterSettle(); }
+  }
+  const k = fk(st.a), tip = k.pts.at(-1);
+  if (st.held) { st.held.x = tip.x; st.held.y = tip.y; }
+
+  if (st.mode === 'reach' && target) {
+    const d = dist(tip, target);
+    if (d < 0.8) {
+      score++; const secs = (now - targetStart) / 1000;
+      best = best === null ? secs : Math.min(best, secs);
+      flashes.push({ x: target.x, y: target.y, t: 0 });
+      setTxt('score', String(score)); setTxt('tbest', best.toFixed(1));
+      spawnReach();
+    }
+    setTxt('tnow', ((now - targetStart) / 1000).toFixed(1));
+    setTxt('tdist', `${dist(tip, target).toFixed(1)} cm away`);
+  }
+  if (st.mode === 'stack' && stackStart !== null && !stackDone) setTxt('stime', ((now - stackStart) / 1000).toFixed(1));
+
+  setTxt('rx', tip.x.toFixed(1)); setTxt('ry', tip.y.toFixed(1)); setTxt('rphi', Math.round(k.phi).toString());
+  const hitting = k.pts.slice(1).some(p => p.y < -0.05);
+  $('warn').hidden = !hitting;
+
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  drawMat();
+  if (st.mode === 'stack') drawZone();
+  if (st.showReach) drawReach();
+  if (target && (st.mode === 'reach' || st.mode === 'ik')) drawTarget(target, now);
+  if (st.mode === 'stack') blocks.filter(b => !b.held).forEach(drawBlock);
+  if (st.showAngles) drawAngles(k);
+  if (st.held) drawBlock(st.held);
+  drawArm(k);
+  drawFlashes(dt);
+  requestAnimationFrame(frame);
+}
+
+syncUI();
+resize();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
