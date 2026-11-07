@@ -140,6 +140,15 @@
   .card p { margin: 0; color: var(--ink-soft); }
   .card .go { margin-top: 0.4rem; font-weight: 700; color: var(--t); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 5px; }
 
+  .card.soon { --fill: transparent; }
+  .card.soon::before { border-style: dashed; }
+  .card.soon .badge {
+    justify-self: start; margin-top: 0.4rem; padding: 0.15rem 0.7rem;
+    font: 700 1.05rem/1.4 "Kalam", "Comic Sans MS", "Segoe Print", cursive;
+    color: #2B2A33; background: var(--yellow); border-radius: 10px 6px 12px 6px; transform: rotate(-2deg);
+  }
+  .card.soon:hover { transform: rotate(-0.3deg); }
+
   footer { padding: 4rem 0 3rem; color: var(--ink-soft); font-size: 0.95rem; }
   footer p { margin: 0; }
 
@@ -255,6 +264,12 @@
           <p>Grow fractal trees, adjust them with sliders, and see the Python code that draws them.</p>
           <span class="go">Open the app</span>
         </a>
+        <a class="card sketch tech" data-cat="tech" href="https://brimmer-tech.github.io/artifacts/robot_arm.html">
+          <span class="tag">Technology, robotics</span>
+          <h3>Robot Arm Lab</h3>
+          <p>Bend the joints to steer a robot arm’s gripper. Reach targets, stack a block tower, then use math to solve for the exact joint angles.</p>
+          <span class="go">Open the app</span>
+        </a>
         <a class="card sketch math" data-cat="math" href="https://brimmer-tech.github.io/artifacts/visual_problem_solver.html">
           <span class="tag">Math, graphing</span>
           <h3>Visual Problem Solver</h3>
@@ -314,7 +329,7 @@
   const names = { all: "", science: " in Science", tech: " in Technology", math: " in Math", english: " in English", music: " in Music" };
   function show(cat) {
     let n = 0;
-    cards.forEach(c => { const on = cat === "all" || c.dataset.cat === cat; c.hidden = !on; if (on) n++; });
+    cards.forEach(c => { const on = cat === "all" || c.dataset.cat === cat; c.hidden = !on; if (on && !c.classList.contains("soon")) n++; });
     buttons.forEach(b => b.setAttribute("aria-pressed", b.dataset.filter === cat));
     count.textContent = n + (n === 1 ? " app" : " apps") + names[cat];
     try { history.replaceState(null, "", cat === "all" ? location.pathname : "#" + cat); } catch (e) {}
