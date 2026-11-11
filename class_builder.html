@@ -151,6 +151,9 @@ header p{margin:2px 0 0;color:var(--muted)}
 pre.code{margin:0;background:var(--code);color:var(--code-ink);border-radius:18px;padding:18px 0;font-family:var(--mono);font-size:14.5px;line-height:1.6;overflow:auto;max-height:70vh;border:2.5px solid var(--ink)}
 .ln{display:block;padding:0 20px;border-left:4px solid transparent;min-height:1.6em}
 .ln.hot{background:var(--hot);border-left-color:var(--sun)}
+.ln.grow{animation:grow .45s ease-out both}
+@keyframes grow{from{opacity:0;transform:translateX(-12px);background:rgba(255,201,60,.4)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.ln.grow{animation:none}}
 .t-k{color:var(--k)}.t-t{color:var(--ty)}.t-s{color:var(--str)}.t-n{color:var(--num)}.t-c{color:var(--code-dim);font-style:italic}
 .legend{font-size:14px;color:var(--muted);margin:10px 4px 0}
 .legend span{display:inline-block;width:12px;height:12px;background:var(--sun);border-radius:3px;vertical-align:-1px;margin-right:4px}
@@ -519,6 +522,7 @@ function objCard(o) {
 }
 
 /* ---------- render ---------- */
+let shownLines = null;
 function render(keepFocus = true) {
   const a = document.activeElement;
   const key = a && a !== document.body ? [...a.attributes].filter(x => /^data-(k|fk|m|start|setv|arg)$/.test(x.name) || x.name === 'data-id' || x.name === 'id').map(x => `[${x.name}="${x.value}"]`).join('') : '';
@@ -538,19 +542,26 @@ function render(keepFocus = true) {
   $('#back').disabled = S.step === 0;
   $('#next').disabled = S.step === 4 || E.length > 0;
   $('#next').style.visibility = S.step === 4 ? 'hidden' : '';
-  const used = S.objects.length > 0, showCode = used || !!S.peek;
-  $('#codeCard').hidden = !showCode;
-  $('#grid').classList.toggle('nocode', !showCode);
-  $('#peek').hidden = used;
+  $('#codeCard').hidden = false;
+  $('#grid').classList.remove('nocode');
+  $('#peek').hidden = true;
   $('#peek').textContent = S.peek ? 'Hide code' : 'Peek at code';
 
   if (S.step < 4) S.tab = 'class';
   $('#tabs').innerHTML = S.step === 4 ? ['class', 'main'].map(t => `<button role="tab" data-tab="${t}" aria-selected="${S.tab === t}">${t === 'class' ? esc(S.name) : 'Main'}.java</button>`).join('') : `<button role="tab" aria-selected="true">${esc(S.name || 'MyClass')}.java</button>`;
   $('#tabs').innerHTML += (S.step === 4 && S.tab === 'main' ? `<button class="codebtn" data-act="english" aria-pressed="${S.en !== false}">${S.en !== false ? 'English: on' : 'English: off'}</button>` : '') + `<button class="codebtn" data-act="copy">Copy</button>`;
-  const lines = S.tab === 'main' ? mainLines() : classLines();
+  const lines = S.tab === 'main' ? mainLines() : classLines().filter(l => S.step >= 4 || l.sec <= S.step);
+  if (S.tab !== 'main' && lines.length === 2) lines.splice(1, 0, {t: '', sec: 0});
   const hotSec = S.step === 4 ? -1 : S.step;
   const code = $('#code');
-  code.innerHTML = lines.map(l => `<span class="ln${l.sec === hotSec ? ' hot' : ''}">${hl(l.t) || ' '}</span>`).join('');
+  const cnt = {}, seen = new Set(); let nFresh = 0;
+  code.innerHTML = lines.map(l => {
+    cnt[l.sec] = (cnt[l.sec] || 0) + 1;
+    const k = S.tab + ':' + l.sec + ':' + cnt[l.sec]; seen.add(k);
+    const fresh = shownLines && !shownLines.has(k);
+    return `<span class="ln${l.sec === hotSec ? ' hot' : ''}${fresh ? ' grow' : ''}"${fresh ? ` style="animation-delay:${(nFresh++) * 70}ms"` : ''}>${hl(l.t) || ' '}</span>`;
+  }).join('');
+  shownLines = seen;
   $('#legend').hidden = S.step === 4;
   if (S.tab === 'main') code.scrollTop = code.scrollHeight;
   else { const h = code.querySelector('.hot'); if (h && S.step > 0) code.scrollTop = Math.max(0, h.offsetTop - 40); }
