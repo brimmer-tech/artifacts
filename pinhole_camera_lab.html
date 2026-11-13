@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pinhole Camera Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Patrick+Hand&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+  --paper:#FBFCFF; --grid:#E1E9F8; --ink:#25233B; --soft:#5B5878; --card:#FFFFFF;
+  --pink:#FF4F9A; --blue:#2E86FF; --yellow:#FFD23F; --green:#1FBF75; --orange:#FF8A1F; --purple:#8B5CF6;
+  --cardboard:#E9B57E; --foil:#D3DAE4; --onColor:#25233B;
+  --display:"Permanent Marker","Marker Felt","Comic Sans MS",cursive;
+  --hand:"Patrick Hand","Chalkboard SE","Comic Sans MS",cursive;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --paper:#191E2C; --grid:#232A3D; --ink:#F1EEE4; --soft:#A9A7BD; --card:#232A3C;
+    --pink:#FF6AAE; --blue:#5AA2FF; --yellow:#FFD84F; --green:#36D18A; --orange:#FF9A3D; --purple:#A383FF;
+    --cardboard:#C98F55; --foil:#B7C0CC;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#191E2C; --grid:#232A3D; --ink:#F1EEE4; --soft:#A9A7BD; --card:#232A3C;
+  --pink:#FF6AAE; --blue:#5AA2FF; --yellow:#FFD84F; --green:#36D18A; --orange:#FF9A3D; --purple:#A383FF;
+  --cardboard:#C98F55; --foil:#B7C0CC;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0; color:var(--ink); font-family:var(--hand); font-size:1.25rem; line-height:1.4;
+  background-color:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:28px 28px;
+}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+img,canvas,svg{max-width:100%}
+a{color:inherit}
+h1,h2,h3{font-family:var(--display);font-weight:400;line-height:1.1;margin:0 0 .4em}
+h1{font-size:clamp(2.2rem,6vw,3.8rem)}
+h2{font-size:clamp(1.7rem,4vw,2.4rem)}
+h3{font-size:1.5rem}
+p{margin:0 0 .7em}
+
+/* header + nav */
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:3px solid var(--ink)}
+.bar{max-width:1180px;margin:0 auto;padding:.55rem 1rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+.logo{font-family:var(--display);font-size:1.7rem;text-decoration:none;display:flex;align-items:center;gap:.4rem}
+.logo svg{width:44px;height:34px}
+nav{display:flex;gap:.3rem;flex-wrap:wrap;margin-left:auto}
+nav a{position:relative;text-decoration:none;padding:.25rem .7rem;font-size:1.25rem;border-radius:8px}
+nav a::before{content:"";position:absolute;inset:.35rem .15rem .15rem;z-index:-1;border-radius:3px 12px 4px 10px;transform:skew(-8deg) rotate(-1.5deg);background:transparent;transition:background .2s}
+nav a:hover::before{background:color-mix(in srgb,var(--c) 30%,transparent)}
+nav a.on::before{background:var(--c)}
+nav a.on{color:var(--onColor)}
+nav a:focus-visible{outline:3px dashed var(--pink);outline-offset:2px}
+
+main{max-width:1180px;margin:0 auto;padding:1.4rem 1rem 3rem}
+.view{display:none}
+.view.on{display:block}
+
+/* shared */
+.btn{
+  font-family:var(--hand);font-size:1.2rem;color:var(--ink);background:var(--card);cursor:pointer;
+  border:3px solid var(--ink);border-radius:255px 15px 225px 15px/15px 225px 15px 255px;
+  padding:.35rem 1rem;box-shadow:3px 3px 0 var(--ink);transition:transform .08s,box-shadow .08s;
+}
+.btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--ink)}
+.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:3px 3px 0 var(--ink)}
+.btn.hot{background:var(--pink);color:var(--onColor)}
+.btn.go{background:var(--green);color:var(--onColor)}
+.btn:focus-visible,button:focus-visible,input:focus-visible{outline:3px dashed var(--pink);outline-offset:3px}
+.panel{background:var(--card);border:3px solid var(--ink);border-radius:18px 6px 16px 8px/8px 16px 6px 18px;padding:1rem 1.1rem}
+.lede{font-size:1.4rem;max-width:42ch;color:var(--soft)}
+.row{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}
+
+/* SVG drawing classes */
+.cardboard{fill:var(--cardboard);stroke:var(--ink);stroke-width:4}
+.inside{fill:#1C1B26;stroke:var(--ink);stroke-width:3}
+.inside-raw{fill:#F3D2A6;stroke:var(--ink);stroke-width:3;transition:fill .8s}
+.painted .inside-raw{fill:#1C1B26}
+.photo{fill:#FFFFFF;stroke:var(--ink);stroke-width:2.5}
+.foilc{fill:var(--foil);stroke:var(--ink);stroke-width:3}
+.crinkle{fill:none;stroke:#8E99AA;stroke-width:1.5}
+.hole{fill:#000}
+.ring{fill:none;stroke:var(--pink);stroke-width:3}
+.flapc{fill:#2B2A3A;stroke:var(--ink);stroke-width:3}
+.hinge{fill:var(--yellow);stroke:var(--ink);stroke-width:2}
+.tapec{fill:#3A3946;stroke:var(--ink);stroke-width:2}
+.seam{stroke:var(--ink);stroke-width:2;stroke-dasharray:6 6;fill:none}
+.aimc{stroke:var(--purple);stroke-width:4;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.ray{stroke-width:4;stroke-linecap:round;fill:none;transition:opacity .4s}
+.r1{stroke:var(--pink)} .r2{stroke:var(--orange)} .r3{stroke:var(--blue)}
+.ground{stroke:var(--ink);stroke-width:4;fill:none;stroke-linecap:round}
+.hit{stroke:transparent;stroke-width:20;fill:none}
+.tk{stroke:var(--treeInk,var(--ink));stroke-width:3.5;stroke-linejoin:round}
+.img{--treeInk:#FFFFFF;opacity:.9;transition:opacity .5s}
+.flap{transform-box:view-box;transform-origin:344px 186px;transform:rotate(120deg);transition:transform .5s cubic-bezier(.5,1.6,.5,1)}
+.closed .flap{transform:none}
+.closed .rays-out{opacity:0}
+.closed .img{opacity:0}
+.part{cursor:pointer;outline:none}
+.part:hover{filter:drop-shadow(0 0 4px var(--blue))}
+.part:focus-visible{filter:drop-shadow(0 0 5px var(--pink)) drop-shadow(0 0 2px var(--pink))}
+.part.sel{filter:drop-shadow(0 0 6px var(--yellow)) drop-shadow(0 0 2px var(--yellow))}
+.lbl{cursor:pointer}
+.lbl text{font-family:var(--hand);font-size:22px;fill:#2A2540;stroke:rgba(255,255,255,.85);stroke-width:4px;paint-order:stroke;stroke-linejoin:round}
+.lbl text.ondark{fill:#FFFFFF;stroke:rgba(0,0,0,.55)}
+.lead{stroke:#3A3550;stroke-width:1.4;fill:none;stroke-dasharray:3 4}
+#dg{display:block;border-radius:14px 4px 12px 6px}
+#dg .ray{stroke-width:3;opacity:.9}
+.quiz .lbl,.quiz .ring{display:none}
+.ring{animation:pulse 1.6s ease-in-out 3}
+@keyframes pulse{50%{stroke-width:7}}
+
+/* meet */
+.hero{display:grid;grid-template-columns:minmax(0,1fr);gap:.4rem;margin-bottom:1rem}
+.meet{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(260px,1fr);gap:1.4rem;align-items:start}
+.stage{background:var(--card);border:3px solid var(--ink);border-radius:22px 8px 20px 10px/10px 20px 8px 22px;padding:.5rem;position:relative}
+.note{
+  --c:var(--yellow);
+  background:color-mix(in srgb,var(--c) 28%,var(--card));
+  border:3px solid var(--ink);border-left:12px solid var(--c);
+  border-radius:4px 14px 6px 12px;padding:1rem 1.1rem;transform:rotate(-.6deg);
+  min-height:16rem;
+}
+.note h3{margin-bottom:.3em}
+.note .tip{border-top:2px dashed var(--soft);padding-top:.5rem;margin-top:.6rem}
+.note .math{font-size:1.1rem;color:var(--soft)}
+.quizbar{display:none;margin-top:.8rem;padding:.6rem .8rem;border:3px dashed var(--purple);border-radius:12px}
+.quizbar.on{display:block}
+.quizbar strong{font-family:var(--display);font-weight:400;font-size:1.4rem}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-top:1.6rem}
+.fact{padding:.8rem 1rem;border:3px solid var(--ink);border-radius:14px 4px 12px 6px;background:var(--card)}
+.fact b{font-family:var(--display);font-weight:400;font-size:1.25rem;display:block;margin-bottom:.2rem}
+.fact:nth-child(1){box-shadow:6px 6px 0 var(--pink)}
+.fact:nth-child(2){box-shadow:6px 6px 0 var(--blue)}
+.fact:nth-child(3){box-shadow:6px 6px 0 var(--green)}
+
+/* build */
+.bprog{list-style:none;display:flex;gap:.4rem;flex-wrap:wrap;padding:0;margin:0 0 1rem}
+.bprog li{display:flex;align-items:center;gap:.35rem;padding:.15rem .75rem .15rem .25rem;border:2px solid var(--soft);border-radius:999px;color:var(--soft);font-size:1.05rem;background:var(--card)}
+.bprog li b{display:inline-grid;place-items:center;width:1.6rem;height:1.6rem;border-radius:50%;border:2px solid currentColor;font-family:var(--display);font-weight:400;font-size:.95rem}
+.bprog li.now{border-color:var(--ink);color:var(--ink);background:color-mix(in srgb,var(--pink) 22%,var(--card))}
+.bprog li.done{border-color:var(--green);color:var(--ink)}
+.bprog li.done b{background:var(--green);border-color:var(--green);color:var(--onColor)}
+.build{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(270px,1fr);gap:1.4rem;align-items:start}
+.bstage{position:relative;aspect-ratio:8/5;border:3px solid var(--ink);border-radius:16px 6px 14px 8px;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;background:#D9C4A3}
+.bstage>svg,.bstage>canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+#bpaint,#bover{pointer-events:none}
+.bt{font-family:var(--hand);font-size:20px;fill:#2A2540}
+.bt.light{fill:#FFFFFF}
+.bstage [data-k]{cursor:pointer}
+.bstage .drag{cursor:grab}
+.ghost{fill:rgba(255,255,255,.18);stroke:#FF4F9A;stroke-width:3;stroke-dasharray:8 6;animation:blink 1.1s ease-in-out infinite}
+@keyframes blink{50%{stroke-opacity:.3}}
+.pick{transition:filter .2s}
+.pick:hover{filter:drop-shadow(0 0 6px rgba(46,134,255,.9))}
+.pick.sel{filter:drop-shadow(0 0 8px #FF4F9A) drop-shadow(0 0 3px #FF4F9A)}
+.falling{transform-box:fill-box;transform-origin:center;transition:transform .9s ease-in,opacity .9s ease-in;transform:translate(40px,300px) rotate(35deg);opacity:0}
+.stepcard h3{font-size:1.7rem}
+.stepnum{color:var(--soft);margin:0 0 .2rem}
+.mats{color:var(--soft);font-size:1.1rem}
+.bstatus{min-height:4.4rem;padding:.6rem .8rem;border:3px solid var(--soft);border-radius:14px 14px 14px 4px;margin:.6rem 0;background:var(--card)}
+.bstatus.good{border-color:var(--green);box-shadow:4px 4px 0 var(--green)}
+.bstatus.warn{border-color:var(--orange);box-shadow:4px 4px 0 var(--orange)}
+.bstatus.bad{border-color:var(--pink);box-shadow:4px 4px 0 var(--pink)}
+details{margin:.4rem 0 .9rem}
+summary{cursor:pointer;color:var(--blue)}
+.notice.ready{border-color:var(--green);background:color-mix(in srgb,var(--green) 15%,var(--card))}
+
+/* shoot */
+.shoot{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(280px,1fr);gap:1.4rem;align-items:start}
+.world{position:relative;border:3px solid var(--ink);border-radius:16px 6px 14px 8px;overflow:hidden;background:#fff;line-height:0}
+.world canvas{width:100%;height:auto;display:block}
+.ctrl{display:grid;gap:.9rem}
+.ctrl label{display:grid;gap:.15rem}
+.ctrl .lab{display:flex;justify-content:space-between;gap:.5rem}
+.ctrl output{font-family:var(--display);font-size:1.1rem}
+input[type=range]{width:100%;accent-color:var(--pink);height:28px}
+.chips{display:flex;gap:.4rem;flex-wrap:wrap;border:0;margin:0;padding:0}
+.chips legend{padding:0;margin-bottom:.2rem}
+.chip{position:relative}
+.chip input{position:absolute;opacity:0}
+.chip span{display:inline-block;padding:.2rem .7rem;border:3px solid var(--ink);border-radius:999px 12px 999px 14px;cursor:pointer;background:var(--card)}
+.chip input:checked+span{background:var(--c,var(--yellow));color:var(--onColor)}
+.chip input:focus-visible+span{outline:3px dashed var(--pink);outline-offset:2px}
+.guide{border:3px dashed var(--blue);border-radius:12px;padding:.6rem .8rem;font-size:1.15rem}
+.guide p{margin:.1rem 0}
+.guide b{font-family:var(--display);font-weight:400}
+.shutterrow{display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+.bigbtn{font-size:1.5rem;padding:.5rem 1.3rem}
+.watch{font-family:var(--display);font-size:2rem;min-width:7ch}
+.mini{width:120px;height:78px}
+.mflap{transform-box:view-box;transform-origin:34px 30px;transition:transform .35s cubic-bezier(.5,1.6,.5,1)}
+.mini.open .mflap{transform:rotate(120deg)}
+.mrays{opacity:0;transition:opacity .3s}
+.mini.open .mrays{opacity:1}
+.notice{border:3px solid var(--orange);border-radius:12px;padding:.5rem .8rem;margin-bottom:1rem;background:color-mix(in srgb,var(--orange) 15%,var(--card))}
+.darkroom{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,1fr);gap:1.4rem;margin-top:1.6rem;align-items:start}
+.traywrap{background:#2A0F14;border:3px solid var(--ink);border-radius:18px;padding:1.2rem;line-height:0}
+.sheet{background:#FCF9F2;box-shadow:0 0 0 6px #3D1820;border-radius:3px;line-height:0}
+.sheet canvas{width:100%;height:auto;display:block;transition:transform .8s ease}
+.sheet canvas.spin{transform:rotate(180deg)}
+.sheet canvas.noanim{transition:none}
+.devsteps{display:flex;gap:.4rem;flex-wrap:wrap;margin:.6rem 0}
+.devsteps span{padding:.1rem .6rem;border:2px solid var(--soft);border-radius:999px;color:var(--soft)}
+.devsteps span.on{border-color:var(--ink);background:var(--c);color:var(--onColor)}
+.verdict p{margin:.3rem 0}
+.verdict .ok::before{content:"✔ ";color:var(--green)}
+.verdict .no::before{content:"✘ ";color:var(--pink)}
+.verdict .hm::before{content:"✱ ";color:var(--orange)}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1rem;margin-top:.8rem}
+.gallery figure{margin:0;background:#FCF9F2;color:#25233B;padding:.5rem .5rem .6rem;border:2px solid var(--ink);box-shadow:4px 4px 0 var(--ink);font-size:1rem;line-height:1.25}
+.gallery figure:nth-child(odd){transform:rotate(-1.2deg)}
+.gallery figure:nth-child(even){transform:rotate(1deg)}
+.gallery img{width:100%;display:block;margin-bottom:.35rem}
+.empty{color:var(--soft)}
+
+/* history */
+.obscura{max-width:640px;margin:1rem 0 2rem}
+.timeline{list-style:none;margin:0;padding:0 0 0 1.6rem;border-left:5px solid var(--ink);max-width:760px}
+.timeline li{position:relative;margin:0 0 1.6rem;padding-left:.6rem}
+.timeline li::before{content:"";position:absolute;left:-2.55rem;top:.4rem;width:1.3rem;height:1.3rem;border:3px solid var(--ink);border-radius:50% 45% 55% 40%;background:var(--c)}
+.yr{display:inline-block;font-family:var(--display);font-size:1.2rem;padding:0 .5rem;background:var(--c);color:var(--onColor);border-radius:4px 10px 3px 8px;transform:rotate(-1.5deg);margin-bottom:.2rem}
+.timeline h3{font-size:1.35rem;margin:.2rem 0}
+.timeline p{max-width:62ch}
+.tryit{margin-top:2rem;max-width:760px}
+
+footer{max-width:1180px;margin:0 auto;padding:1rem;color:var(--soft);font-size:1.05rem;border-top:2px dashed var(--grid)}
+
+@media (max-width:860px){
+  .meet,.build,.shoot,.darkroom{grid-template-columns:minmax(0,1fr)}
+  .note{min-height:0}
+  nav{margin-left:0}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+
+<!-- shared drawing defs -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <filter id="rough" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="4" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="3" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <radialGradient id="gLeafA" cx=".38" cy=".32" r=".7"><stop offset="0" stop-color="#A8DB7A"/><stop offset=".55" stop-color="#4E9B3C"/><stop offset="1" stop-color="#245E25"/></radialGradient>
+    <radialGradient id="gLeafB" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#6FB357"/><stop offset=".6" stop-color="#2F7430"/><stop offset="1" stop-color="#1B4A1E"/></radialGradient>
+    <linearGradient id="gTrunk" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3E2715"/><stop offset=".45" stop-color="#7A5232"/><stop offset="1" stop-color="#3A2414"/></linearGradient>
+    <radialGradient id="gApple" cx=".35" cy=".3" r=".7"><stop offset="0" stop-color="#FF9A9A"/><stop offset=".5" stop-color="#D7263D"/><stop offset="1" stop-color="#7E1622"/></radialGradient>
+    <linearGradient id="gSkyM" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9CCBF0"/><stop offset=".65" stop-color="#D6EBFA"/><stop offset="1" stop-color="#EEF7FD"/></linearGradient>
+    <linearGradient id="gGrassM" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8CC46A"/><stop offset="1" stop-color="#4E8A35"/></linearGradient>
+    <radialGradient id="gInside" cx=".5" cy=".5" r=".7"><stop offset="0" stop-color="#2E2D35"/><stop offset="1" stop-color="#0E0D12"/></radialGradient>
+    <g id="treeArt">
+      <ellipse cx="150" cy="301" rx="44" ry="5" fill="rgba(0,0,0,.25)"/>
+      <path d="M133 301 C136 275 134 250 137 224 L143 224 C146 250 144 275 148 301 Z" fill="url(#gTrunk)"/>
+      <path d="M139 240 L120 214 M141 236 L160 212" stroke="#5A3A20" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="114" cy="208" r="27" fill="url(#gLeafB)"/><circle cx="168" cy="208" r="27" fill="url(#gLeafB)"/><circle cx="140" cy="214" r="26" fill="url(#gLeafB)"/>
+      <circle cx="140" cy="186" r="44" fill="url(#gLeafA)"/><circle cx="118" cy="174" r="24" fill="url(#gLeafA)"/><circle cx="162" cy="176" r="24" fill="url(#gLeafA)"/><circle cx="140" cy="160" r="22" fill="url(#gLeafA)"/>
+      <circle cx="124" cy="182" r="5" fill="url(#gApple)"/><circle cx="158" cy="198" r="5" fill="url(#gApple)"/><circle cx="142" cy="166" r="5" fill="url(#gApple)"/><circle cx="110" cy="206" r="5" fill="url(#gApple)"/>
+    </g>
+    <linearGradient id="gTable" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCC7A6"/><stop offset="1" stop-color="#CBB08A"/></linearGradient>
+    <linearGradient id="gFront" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DDAA6A"/><stop offset="1" stop-color="#C68F4E"/></linearGradient>
+    <linearGradient id="gTop" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ECC48C"/><stop offset="1" stop-color="#DCAC6E"/></linearGradient>
+    <linearGradient id="gSide" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#B98048"/><stop offset="1" stop-color="#A26C3A"/></linearGradient>
+    <linearGradient id="gFoil" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F4F6F9"/><stop offset=".3" stop-color="#B8C1CC"/><stop offset=".5" stop-color="#EEF1F5"/><stop offset=".75" stop-color="#A9B3BF"/><stop offset="1" stop-color="#E6EAEF"/></linearGradient>
+    <linearGradient id="gTape" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#45444D"/><stop offset=".4" stop-color="#2C2B33"/><stop offset="1" stop-color="#1D1C22"/></linearGradient>
+    <linearGradient id="gBlack" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2A2930"/><stop offset="1" stop-color="#101014"/></linearGradient>
+    <linearGradient id="gGloss" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".42" stop-color="#EEF2FA"/><stop offset=".5" stop-color="#FFFFFF"/><stop offset=".58" stop-color="#E9EEF7"/><stop offset="1" stop-color="#FAFBFD"/></linearGradient>
+    <linearGradient id="gSteel" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8E959F"/><stop offset=".45" stop-color="#F3F5F8"/><stop offset="1" stop-color="#9AA1AB"/></linearGradient>
+    <filter id="grain" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" seed="7" result="t"/>
+      <feColorMatrix in="t" type="matrix" values="0 0 0 0 .35  0 0 0 0 .22  0 0 0 0 .1  0 0 0 .55 -.12" result="c"/>
+      <feComposite in="c" in2="SourceGraphic" operator="in" result="m"/>
+      <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="m"/></feMerge>
+    </filter>
+    <filter id="glow" filterUnits="userSpaceOnUse" x="0" y="0" width="800" height="500">
+      <feGaussianBlur stdDeviation="5" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+</svg>
+
+<header>
+  <div class="bar">
+    <a class="logo" href="#meet" aria-label="Pinhole Camera Lab home">
+      <svg viewBox="0 0 44 34" aria-hidden="true"><rect x="8" y="5" width="32" height="25" rx="3" fill="var(--cardboard)" stroke="var(--ink)" stroke-width="3"/><circle cx="8" cy="17" r="3" fill="var(--pink)" stroke="var(--ink)" stroke-width="2"/><path d="M1 8 L8 17 M1 26 L8 17" stroke="var(--yellow)" stroke-width="3" stroke-linecap="round"/></svg>
+      Pinhole Lab
+    </a>
+    <nav aria-label="Sections">
+      <a href="#meet" style="--c:var(--yellow)">Meet the camera</a>
+      <a href="#build" style="--c:var(--green)">Build it</a>
+      <a href="#shoot" style="--c:var(--pink)">Take pictures</a>
+      <a href="#history" style="--c:var(--blue)">History</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<!-- ============ MEET ============ -->
+<section class="view" id="v-meet">
+  <div class="hero">
+    <h1>A camera with no lens</h1>
+    <p class="lede">A light-tight box, a hole smaller than a pencil dot, and a sheet of photo paper. That’s the whole camera. Click any part to find out what it does.</p>
+  </div>
+  <div class="meet">
+    <div>
+      <div class="stage">
+        <svg id="dg" viewBox="0 0 820 440" role="group" aria-label="Cutaway drawing of a pinhole camera photographing a tree">
+          <rect width="820" height="440" fill="url(#gSkyM)"/>
+          <path d="M0 292 Q200 286 410 292 T820 290 V440 H0 Z" fill="url(#gGrassM)"/>
+          <polygon points="320,346 820,346 820,440 270,440" fill="url(#gTable)" filter="url(#grain)"/>
+          <rect x="300" y="346" width="520" height="5" fill="rgba(0,0,0,.18)"/>
+          <ellipse cx="495" cy="350" rx="150" ry="6" fill="rgba(0,0,0,.28)"/>
+          <g class="part" data-part="subject" tabindex="0" role="button" aria-label="The subject">
+            <rect x="80" y="130" width="120" height="175" fill="transparent"/>
+            <use href="#treeArt"/>
+          </g>
+          <g class="part" data-part="box" tabindex="0" role="button" aria-label="Light-tight box">
+            <path d="M352 92 H628 V348 H352 Z" fill="url(#gFront)" filter="url(#grain)" stroke="#4A3220" stroke-width="2"/>
+          </g>
+          <g class="part" data-part="interior" tabindex="0" role="button" aria-label="Black inside">
+            <rect x="368" y="108" width="244" height="224" fill="url(#gInside)" stroke="#2A1A10" stroke-width="1.5"/>
+          </g>
+          <g class="part" data-part="paper" tabindex="0" role="button" aria-label="Photo paper">
+            <rect x="598" y="116" width="10" height="208" fill="url(#gGloss)" stroke="#8A8A8A" stroke-width="1"/>
+          </g>
+          <g class="part img" data-part="image" tabindex="0" role="button" aria-label="Upside-down image">
+            <use href="#treeArt" transform="translate(578,220) scale(0.42,-1.1) translate(-140,-220)"/>
+          </g>
+          <g class="part" data-part="rays" tabindex="0" role="button" aria-label="Light rays">
+            <g class="rays-in">
+              <path class="ray r1" d="M140 142 L360 220"/>
+              <path class="ray r2" d="M140 200 L360 220"/>
+              <path class="ray r3" d="M140 297 L360 220"/>
+            </g>
+            <g class="rays-out">
+              <path class="ray r1" d="M360 220 L598 304"/>
+              <path class="ray r2" d="M360 220 L598 241"/>
+              <path class="ray r3" d="M360 220 L598 136"/>
+            </g>
+            <path class="hit" d="M140 142 L360 220 L598 304 M140 297 L360 220 L598 136"/>
+          </g>
+          <g class="part" data-part="foil" tabindex="0" role="button" aria-label="Foil plate">
+            <rect x="348" y="194" width="24" height="52" rx="1" fill="url(#gFoil)" stroke="#7D8794" stroke-width="1.5"/>
+            <path d="M352 202 l6 5 l5 -4 M354 238 l7 -5 l6 6" stroke="#9AA4B1" stroke-width="1" fill="none"/>
+          </g>
+          <g class="part" data-part="pinhole" tabindex="0" role="button" aria-label="The pinhole">
+            <circle class="ring" cx="360" cy="220" r="9"/>
+            <circle class="hole" cx="360" cy="220" r="2.5"/>
+            <circle cx="360" cy="220" r="14" fill="transparent"/>
+          </g>
+          <g class="part" data-part="shutter" tabindex="0" role="button" aria-label="Shutter flap">
+            <g class="flap"><rect x="336" y="186" width="9" height="64" rx="1.5" fill="url(#gBlack)" stroke="#000" stroke-width="1"/></g>
+            <rect x="331" y="180" width="20" height="9" rx="1.5" fill="url(#gTape)"/>
+          </g>
+          <g class="part" data-part="tape" tabindex="0" role="button" aria-label="Light-proof tape">
+            <path d="M352 100 H628" stroke="rgba(60,35,15,.55)" stroke-width="1.5" stroke-dasharray="5 4"/>
+            <rect x="330" y="84" width="46" height="16" rx="1.5" fill="url(#gTape)" transform="rotate(-35 353 92)"/>
+            <rect x="605" y="84" width="46" height="16" rx="1.5" fill="url(#gTape)" transform="rotate(35 628 92)"/>
+            <rect x="470" y="85" width="44" height="14" rx="1.5" fill="url(#gTape)"/>
+          </g>
+          <g class="part" data-part="aim" tabindex="0" role="button" aria-label="Aiming line">
+            <path d="M610 66 H372 M384 59 L370 66 L384 73 M610 59 V73" stroke="#2F2A45" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="365" y="52" width="250" height="28" fill="transparent"/>
+          </g>
+          <g class="labels">
+            <g class="lbl" data-part="subject"><text x="56" y="112">the subject</text></g>
+            <g class="lbl" data-part="shutter"><path class="lead" d="M248 128 L292 152"/><text x="186" y="124">shutter</text></g>
+            <g class="lbl" data-part="rays"><path class="lead" d="M196 330 L212 278"/><text x="146" y="354">light rays</text></g>
+            <g class="lbl" data-part="pinhole"><path class="lead" d="M298 290 L354 226"/><text x="248" y="312">pinhole</text></g>
+            <g class="lbl" data-part="foil"><path class="lead" d="M330 374 L352 250"/><text x="302" y="398">foil</text></g>
+            <g class="lbl" data-part="box"><path class="lead" d="M495 374 L495 352"/><text x="476" y="398">box</text></g>
+            <g class="lbl" data-part="interior"><text class="ondark" x="392" y="140">black inside</text></g>
+            <g class="lbl" data-part="paper"><path class="lead" d="M642 226 L611 226"/><text x="648" y="232">photo paper</text></g>
+            <g class="lbl" data-part="image"><path class="lead" d="M642 290 L594 284"/><text x="648" y="296">upside-down image</text></g>
+            <g class="lbl" data-part="tape"><path class="lead" d="M644 72 L630 88"/><text x="648" y="68">tape</text></g>
+            <g class="lbl" data-part="aim"><text x="420" y="44">aiming line</text></g>
+          </g>
+        </svg>
+      </div>
+      <div class="row" style="margin-top:.9rem">
+        <button class="btn" id="dgShutter">Close the shutter</button>
+        <button class="btn" id="quizBtn">Quiz me on the parts</button>
+      </div>
+      <div class="quizbar" id="quizbar" aria-live="polite">
+        <strong id="quizQ">Find the pinhole</strong>
+        <p id="quizMsg" style="margin:.2rem 0">Labels are hidden. Click the part on the drawing.</p>
+        <div class="row"><span id="quizScore">Score: 0 / 0</span><button class="btn" id="quizEnd">Show labels again</button></div>
+      </div>
+    </div>
+    <aside class="note" id="info" aria-live="polite">
+      <h3>How it works</h3>
+      <p>Light bounces off the tree in every direction. Only a thin beam from each spot on the tree fits through the pinhole, so each spot lands in its own place on the back wall.</p>
+      <p>Those beams cross at the hole, so the picture arrives upside down.</p>
+      <p class="tip"><b>Try this:</b> click the pinhole, then the shutter. Or close the shutter and watch the light stop.</p>
+    </aside>
+  </div>
+  <div class="facts">
+    <div class="fact"><b>Camera means room</b>“Camera obscura” is Latin for “dark room.” The first cameras were whole rooms with a hole in the wall.</div>
+    <div class="fact"><b>Slow on purpose</b>A pinhole lets in very little light, so pictures take seconds to many minutes instead of a split second.</div>
+    <div class="fact"><b>Always in focus</b>With no lens, near and far things are equally (softly) sharp. There’s nothing to focus.</div>
+  </div>
+</section>
+
+<!-- ============ BUILD ============ -->
+<section class="view" id="v-build">
+  <h2>Build your camera</h2>
+  <p class="lede">The same eight steps you’d do with a real box, one at a time. Each step tells you exactly what to do.</p>
+  <ol class="bprog" id="bprog" aria-label="Build progress"></ol>
+  <div class="build">
+    <div>
+      <div class="bstage" id="bstage">
+        <svg id="bsvg" viewBox="0 0 800 500" role="img" aria-label="Your workbench"></svg>
+        <canvas id="bpaint" width="800" height="500"></canvas>
+        <svg id="bover" viewBox="0 0 800 500" aria-hidden="true"></svg>
+      </div>
+      <div class="row" id="bctrl" style="margin-top:.8rem"></div>
+    </div>
+    <div class="stepcard panel">
+      <p class="stepnum" id="bNum"></p>
+      <h3 id="bTitle"></h3>
+      <p id="bInstr"></p>
+      <p class="mats" id="bMats"></p>
+      <div class="bstatus" id="bStatus" aria-live="polite"></div>
+      <details id="bWhyBox"><summary>Why this matters</summary><p id="bWhy"></p></details>
+      <div class="row">
+        <button class="btn" id="bRedo">Redo this step</button>
+        <button class="btn go" id="bNext" disabled>Next step</button>
+        <a class="btn go" id="bGo" href="#shoot" hidden style="text-decoration:none">Take pictures with it</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SHOOT ============ -->
+<section class="view" id="v-shoot">
+  <h2>Take pictures</h2>
+  <p class="lede">Aim, open the shutter, wait, close it. Then develop your paper in the darkroom.</p>
+  <div class="notice" id="notBuilt" hidden>Your camera isn’t built yet. <a href="#build">Build it first</a>, or go ahead and borrow ours.</div>
+  <div class="shoot">
+    <div>
+      <div class="world"><canvas id="world" width="1000" height="600" aria-label="The scene in front of your camera. The dashed frame shows what your camera can see."></canvas></div>
+      <p style="color:var(--soft);font-size:1.1rem;margin-top:.5rem">The bright frame is what lands on your paper. A longer box zooms in; a shorter box sees wider.</p>
+    </div>
+    <div class="ctrl panel">
+      <fieldset class="chips" id="sceneChips">
+        <legend>What are you photographing?</legend>
+        <label class="chip" style="--c:var(--yellow)"><input type="radio" name="scene" value="sunny" checked><span>Sunny backyard</span></label>
+        <label class="chip" style="--c:var(--blue)"><input type="radio" name="scene" value="cloudy"><span>Cloudy park</span></label>
+        <label class="chip" style="--c:var(--orange)"><input type="radio" name="scene" value="indoor"><span>Indoors by a window</span></label>
+      </fieldset>
+      <label>
+        <span class="lab">Pinhole size <output id="dOut">0.40 mm</output></span>
+        <input type="range" id="dIn" min="0.1" max="2" step="0.05" value="0.4">
+      </label>
+      <label>
+        <span class="lab">Box depth (hole to paper) <output id="fOut">100 mm</output></span>
+        <input type="range" id="fIn" min="60" max="200" step="5" value="100">
+      </label>
+      <div class="guide" id="guide"></div>
+      <fieldset class="chips" id="speedChips">
+        <legend>Clock speed (so you don’t wait forever)</legend>
+        <label class="chip" style="--c:var(--green)"><input type="radio" name="speed" value="1"><span>Real time</span></label>
+        <label class="chip" style="--c:var(--green)"><input type="radio" name="speed" value="10" checked><span>10× faster</span></label>
+        <label class="chip" style="--c:var(--green)"><input type="radio" name="speed" value="60"><span>60× faster</span></label>
+      </fieldset>
+      <div class="shutterrow">
+        <svg class="mini" id="mini" viewBox="0 0 140 90" aria-hidden="true">
+          <g class="mrays"><path d="M2 20 L36 47 M2 74 L36 47 M2 47 L36 47" stroke="#FFD84F" stroke-width="3" stroke-linecap="round" opacity=".85"/></g>
+          <polygon points="38,14 134,14 140,8 44,8" fill="url(#gTop)" stroke="#4A3220" stroke-width="1.5"/>
+          <rect x="38" y="14" width="96" height="66" rx="2" fill="url(#gFront)" stroke="#4A3220" stroke-width="2"/>
+          <rect x="32" y="36" width="12" height="22" fill="url(#gFoil)" stroke="#7D8794"/>
+          <circle cx="38" cy="47" r="2" fill="#000"/>
+          <g class="mflap"><rect x="30" y="30" width="7" height="34" rx="1.5" fill="url(#gBlack)" stroke="#000"/></g>
+          <rect x="28" y="27" width="11" height="6" fill="url(#gTape)"/>
+        </svg>
+        <div>
+          <div class="watch" id="watch" aria-live="off">0.0 s</div>
+          <div style="color:var(--soft);font-size:1rem">exposure time</div>
+        </div>
+      </div>
+      <button class="btn hot bigbtn" id="shutterBtn">Open the shutter</button>
+    </div>
+  </div>
+
+  <div class="darkroom">
+    <div>
+      <h3>Darkroom</h3>
+      <div class="traywrap"><div class="sheet"><canvas id="printC" width="500" height="400" aria-label="Your developed photo"></canvas></div></div>
+    </div>
+    <div>
+      <div class="devsteps" id="devsteps">
+        <span style="--c:var(--yellow)">Developer</span><span style="--c:var(--orange)">Stop bath</span><span style="--c:var(--blue)">Fixer</span>
+      </div>
+      <p id="devMsg" aria-live="polite">Take a picture and your paper will show up here.</p>
+      <div class="row" id="devBtns" hidden>
+        <button class="btn" id="toPos">Make it a positive</button>
+        <button class="btn" id="flipBtn" disabled>Turn it right side up</button>
+      </div>
+      <div class="verdict" id="verdict" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <div style="margin-top:2rem">
+    <div class="row"><h3 style="margin:0">Your photos</h3><button class="btn" id="clearGal" style="margin-left:auto">Clear photos</button></div>
+    <div class="gallery" id="gallery"></div>
+  </div>
+</section>
+
+<!-- ============ HISTORY ============ -->
+<section class="view" id="v-history">
+  <h2>2,400 years of pinholes</h2>
+  <p class="lede">People noticed the pinhole effect thousands of years before anyone could save the picture.</p>
+  <svg class="obscura" viewBox="0 0 640 270" role="img" aria-label="A camera obscura: light from a tree outside passes through a hole in the wall and makes an upside-down tree on the far wall of a dark room, where a person watches.">
+    <g filter="url(#rough)">
+      <path class="ground" d="M10 251 Q200 246 380 251"/>
+      <use href="#treeArt" transform="translate(150,250) scale(1.14) translate(-140,-300)"/>
+      <path d="M380 30 H620 V250 H380 Z" fill="#1C1B26" stroke="var(--ink)" stroke-width="4"/>
+      <path d="M380 30 V131 M380 149 V250" stroke="var(--cardboard)" stroke-width="12"/>
+      <g class="img"><use href="#treeArt" transform="translate(588,362) scale(0.45,-1.091) translate(-140,0)"/></g>
+      <path class="ray r1" d="M150 70 L380 140 L600 207"/>
+      <path class="ray r3" d="M150 250 L380 140 L600 35"/>
+      <g stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" fill="none">
+        <path d="M430 196 V222 M430 222 L418 248 M430 222 L442 248 M430 202 L450 194 M430 202 L412 212"/>
+        <circle cx="430" cy="182" r="13" fill="#F5C9A0" stroke="var(--ink)" stroke-width="3"/>
+      </g>
+    </g>
+  </svg>
+
+  <ol class="timeline" id="timeline"></ol>
+
+  <div class="panel tryit">
+    <h3>Try it without building anything</h3>
+    <p><b>Leaf pinholes:</b> on a sunny day, look at the round spots of light under a leafy tree. Each spot is a tiny picture of the sun made by a gap between leaves.</p>
+    <p><b>Room camera:</b> cover a bedroom window completely with cardboard and foil, poke a hole about 1 cm wide, and wait a few minutes for your eyes to adjust. The outside world appears upside down on the opposite wall.</p>
+    <p><b>Eclipse viewer:</b> poke a pinhole in a card and let sunlight fall through it onto a second card. Never look at the sun itself, through the hole or otherwise.</p>
+  </div>
+</section>
+
+</main>
+
+<footer>Made for curious photographers. Photo paper and darkroom chemicals need adult supervision; ask before using a craft knife.</footer>
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const store={
+  get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
+};
+
+/* ================= ROUTING ================= */
+const VIEWS=['meet','build','shoot','history'];
+function route(){
+  let v=location.hash.slice(1); if(!VIEWS.includes(v)) v='meet';
+  $$('.view').forEach(el=>el.classList.toggle('on',el.id==='v-'+v));
+  $$('nav a').forEach(a=>{const on=a.getAttribute('href')==='#'+v;a.classList.toggle('on',on);on?a.setAttribute('aria-current','page'):a.removeAttribute('aria-current')});
+  if(v==='shoot'){ applyCam(); startLoop(); } else stopLoop();
+}
+addEventListener('hashchange',()=>{route();scrollTo(0,0)});
+
+/* ================= MEET ================= */
+const PARTS={
+  subject:{short:'subject',name:'The subject',c:'var(--green)',
+    body:'Anything that reflects light can be photographed. Sunlight bounces off every spot on this tree in every direction. Only a tiny bit of that light happens to head straight for the pinhole.',
+    tip:'Bright, still things make the best subjects: buildings, trees, statues. A friend would have to hold still for a whole minute!'},
+  rays:{short:'light rays',name:'Light rays',c:'var(--orange)',
+    body:'Light travels in straight lines. A ray from the top of the tree heads down through the hole and lands low on the paper. A ray from the bottom heads up and lands high. They cross at the pinhole.',
+    tip:'Follow the pink ray from the treetop and the blue ray from the trunk. Watch them swap places.'},
+  pinhole:{short:'pinhole',name:'The pinhole',c:'var(--pink)',
+    body:'A tiny round hole, usually 0.2 to 0.6 mm across, poked with a needle. It does the job a lens does: it lets only a narrow beam through from each spot, so the beams barely overlap and the picture comes out (mostly) sharp.',
+    extra:'Too big and the beams overlap: bright but blurry. Too tiny and the light spreads out as it squeezes through (that’s called diffraction): blurry again. There’s a best size in between.',
+    math:'Best size ≈ 1.9 × √(box depth × wavelength of light). For a 100 mm deep box that’s about 0.45 mm.',
+    tip:'In “Take pictures,” try a 2 mm hole, then a 0.1 mm hole, and compare.'},
+  foil:{short:'foil',name:'Foil plate',c:'var(--blue)',
+    body:'The pinhole is poked in thin metal, like heavy aluminum foil or a piece of soda can. Thin metal makes a clean, round hole. Thick cardboard would make a little tunnel instead, which blocks light coming in at an angle.',
+    tip:'Sand the foil gently after poking to remove the rough edge around the hole.'},
+  shutter:{short:'shutter',name:'The shutter',c:'var(--purple)',
+    body:'Just a flap of black card or tape over the pinhole. Lift it to start the picture, drop it to stop. Exposures take seconds or minutes, so you can time them with a watch.',
+    tip:'Use the “Close the shutter” button under the drawing and watch the light get blocked.'},
+  box:{short:'box',name:'Light-tight box',c:'var(--orange)',
+    body:'Any box works: a shoebox, an oatmeal canister, a cookie tin, even a soda can. The only rule is that no light gets in except through the pinhole.',
+    extra:'The distance from hole to paper matters. A short box sees a wide view. A long box zooms in.',
+    tip:'Tape the camera down or set it on something solid. It can’t move during the picture.'},
+  interior:{short:'black inside',name:'Black inside',c:'var(--purple)',
+    body:'Flat black paint or black paper soaks up stray light. Without it, light would bounce off the inside walls and fog the picture with a grey haze.',
+    tip:'Use flat (matte) black, not shiny. Shiny paint still reflects.'},
+  paper:{short:'photo paper',name:'Photo paper',c:'var(--yellow)',
+    body:'Paper coated with light-sensitive silver salts. Where light hits, the silver turns dark after developing. Bright parts of the scene come out dark, so you get a negative.',
+    extra:'It has to be loaded in a darkroom under a red safelight, because red light doesn’t affect black-and-white photo paper. It’s much slower than film, so exposures are long.',
+    tip:'Tape it to the back wall with the shiny side facing the pinhole.'},
+  image:{short:'upside-down image',name:'The upside-down image',c:'var(--green)',
+    body:'Because the light rays cross at the pinhole, the picture lands upside down and backwards. It’s turned a half circle.',
+    extra:'Your eye works the same way. The image on the back of your eye is upside down, and your brain flips it.',
+    tip:'In a dark room with a pinhole camera that has a tracing-paper back, you can see this image live.'},
+  tape:{short:'tape',name:'Light-proof tape',c:'var(--pink)',
+    body:'Black electrical tape seals the lid and every seam. Even a hairline crack can leak enough light to fog the whole sheet of paper over a long exposure.',
+    tip:'Check for leaks by shining a flashlight on the box in a dark room and looking for glowing seams.'},
+  aim:{short:'aiming line',name:'Aiming line',c:'var(--purple)',
+    body:'A pinhole camera has no viewfinder. Lines drawn on top of the box, pointing out from the pinhole, show you where the camera is looking.',
+    tip:'Draw two more lines on the top to show the left and right edges of the view.'}
+};
+const info=$('#info'), dg=$('#dg');
+function showPart(k){
+  const p=PARTS[k];
+  info.style.setProperty('--c',p.c);
+  info.innerHTML=`<h3>${p.name}</h3><p>${p.body}</p>${p.extra?`<p>${p.extra}</p>`:''}${p.math?`<p class="math">${p.math}</p>`:''}<p class="tip"><b>Try this:</b> ${p.tip}</p>`;
+  $$('#dg .part').forEach(g=>g.classList.toggle('sel',g.dataset.part===k));
+}
+let quiz=null;
+function newQ(){
+  const keys=Object.keys(PARTS); let t;
+  do{t=keys[Math.floor(Math.random()*keys.length)]}while(quiz.target&&t===quiz.target);
+  quiz.target=t; $('#quizQ').textContent=`Find the ${PARTS[t].short}`;
+}
+function pick(k){
+  if(!quiz){showPart(k);return}
+  quiz.tries++;
+  if(k===quiz.target){quiz.score++;$('#quizMsg').textContent=`Yes! That’s the ${PARTS[k].short}.`;showPart(k);setTimeout(newQ,700)}
+  else $('#quizMsg').textContent=`That’s the ${PARTS[k].short}. Keep looking!`;
+  $('#quizScore').textContent=`Score: ${quiz.score} / ${quiz.tries}`;
+}
+dg.addEventListener('click',e=>{const g=e.target.closest('[data-part]');if(g)pick(g.dataset.part)});
+dg.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.classList&&e.target.classList.contains('part')){e.preventDefault();pick(e.target.dataset.part)}});
+$('#dgShutter').onclick=()=>{const c=dg.classList.toggle('closed');$('#dgShutter').textContent=c?'Open the shutter':'Close the shutter'};
+$('#quizBtn').onclick=()=>{quiz={score:0,tries:0,target:null};dg.classList.add('quiz');$('#quizbar').classList.add('on');$('#quizMsg').textContent='Labels are hidden. Click the part on the drawing.';$('#quizScore').textContent='Score: 0 / 0';newQ()};
+$('#quizEnd').onclick=()=>{quiz=null;dg.classList.remove('quiz');$('#quizbar').classList.remove('on')};
+
+/* ================= BUILD ================= */
+const BI='#4A3220', SK=`stroke="${BI}" stroke-width="2.5" stroke-linejoin="round"`;
+const PT=a=>a.map(q=>q.map(n=>+n.toFixed(1)).join(',')).join(' ');
+const near=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
+const idealPin=f=>1.9*Math.sqrt(f*0.00055);
+const BOXES={
+  gift:{name:'Small gift box',depth:70,w:150,h:110,note:'very wide view, darker corners'},
+  shoe:{name:'Shoebox',depth:110,w:180,h:125,note:'a nice all-round view'},
+  boot:{name:'Boot box',depth:180,w:170,h:130,note:'zoomed in, longer exposures'}
+};
+const B={i:0,box:null,depth:110,d:0,dark:false,stepOk:false};
+const stage=$('#bstage'),bsvg=$('#bsvg'),bover=$('#bover'),bcv=$('#bpaint'),bctx=bcv.getContext('2d'),bctrl=$('#bctrl');
+let H_={},T_={};
+function sp(e){const p=bsvg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(bsvg.getScreenCTM().inverse())}
+stage.addEventListener('pointerdown',e=>{if(H_.down&&H_.down(sp(e),e)){try{stage.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault()}});
+stage.addEventListener('pointermove',e=>{if(H_.move)H_.move(sp(e),e)});
+['pointerup','pointercancel'].forEach(t=>stage.addEventListener(t,e=>{if(H_.up)H_.up(sp(e),e)}));
+stage.addEventListener('click',e=>{const k=e.target.closest&&e.target.closest('[data-k]');if(k&&H_.click)H_.click(k.dataset.k,sp(e))});
+function bstatus(t,k){const s=$('#bStatus');s.className='bstatus '+(k||'');s.innerHTML=t}
+function done(t){B.stepOk=true;$('#bNext').disabled=false;bstatus(t,'good')}
+
+/* drawing pieces */
+const table=()=>`<rect width="800" height="500" fill="url(#gTable)" filter="url(#grain)"/>`;
+function box3d(x,y,w,h,d,o={}){
+  const dx=d*.6,dy=-d*.4;let s='';
+  s+=`<polygon points="${PT([[x,y],[x+w,y],[x+w+dx,y+dy],[x+dx,y+dy]])}" fill="url(#gTop)" filter="url(#grain)" ${SK}/>`;
+  s+=`<polygon points="${PT([[x+w,y],[x+w+dx,y+dy],[x+w+dx,y+h+dy],[x+w,y+h]])}" fill="url(#gSide)" filter="url(#grain)" ${SK}/>`;
+  s+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#gFront)" filter="url(#grain)" ${SK}/>`;
+  if(o.lid){const b=h*.14;
+    s+=`<polygon points="${PT([[x-3,y-3],[x+w+3,y-3],[x+w+dx+3,y+dy-3],[x+dx-3,y+dy-3]])}" fill="url(#gTop)" filter="url(#grain)" ${SK}/>`;
+    s+=`<polygon points="${PT([[x+w+3,y-3],[x+w+dx+3,y+dy-3],[x+w+dx+3,y+dy+b],[x+w+3,y+b]])}" fill="url(#gSide)" ${SK}/>`;
+    s+=`<rect x="${x-3}" y="${y-3}" width="${w+6}" height="${b+3}" fill="#DDAC6C" filter="url(#grain)" ${SK}/>`;}
+  if(o.front){const cx=x+w/2,cy=y+h*.57,f=Math.min(w,h)*.3;
+    s+=`<rect x="${cx-f/2}" y="${cy-f/2}" width="${f}" height="${f}" fill="url(#gFoil)" stroke="#7D8794" stroke-width="1.5"/>`;
+    s+=`<rect x="${cx-f/2-4}" y="${cy-f/2-5}" width="${f+8}" height="7" fill="#2C2B33"/><rect x="${cx-f/2-4}" y="${cy+f/2-2}" width="${f+8}" height="7" fill="#2C2B33"/>`;
+    s+=`<rect x="${cx-f*.2}" y="${cy-f*.45}" width="${f*.4}" height="${f*.75}" fill="url(#gBlack)" stroke="#000"/>`;}
+  return s;
+}
+const lightSwitch=on=>`<g data-k="switch"><rect x="712" y="24" width="56" height="84" rx="8" fill="#F7F7F4" stroke="#555" stroke-width="2"/><rect x="728" y="40" width="24" height="52" rx="4" fill="#DDD" stroke="#777"/><rect x="730" y="${on?42:66}" width="20" height="24" rx="3" fill="#FFF" stroke="#666"/><text class="bt${on?'':' light'}" x="740" y="132" text-anchor="middle" style="font-size:18px">lights ${on?'on':'off'}</text></g>`;
+const WALLS={back:[[170,80],[630,80],[550,140],[250,140]],right:[[630,80],[630,420],[550,360],[550,140]],front:[[170,420],[630,420],[550,360],[250,360]],left:[[170,80],[250,140],[250,360],[170,420]]};
+const RAW={back:'#BE874F',right:'#B07A44',front:'#CF995E',left:'#C48C53',floor:'#D9A668'},
+      PAINT={back:'#1F1E25',right:'#18171D',front:'#24232A',left:'#1C1B21',floor:'#141318'};
+function topDown(painted){const c=painted?PAINT:RAW,g=painted?'':'filter="url(#grain)"',st=`stroke="${painted?'#000':BI}" stroke-width="1.5"`;
+  let s=table()+`<rect x="150" y="60" width="500" height="380" fill="url(#gTop)" filter="url(#grain)" ${SK}/>`;
+  for(const k in WALLS)s+=`<polygon points="${PT(WALLS[k])}" fill="${c[k]}" ${g} ${st}/>`;
+  return s+`<rect x="250" y="140" width="300" height="220" fill="${c.floor}" ${g} ${st}/>`;}
+const tdShade=()=>`<polygon points="${PT(WALLS.right)}" fill="rgba(0,0,0,.16)"/><polygon points="${PT(WALLS.back)}" fill="rgba(0,0,0,.1)"/><g stroke="rgba(0,0,0,.45)" stroke-width="1.5" fill="none"><path d="M170 80 L250 140 M630 80 L550 140 M630 420 L550 360 M170 420 L250 360"/><rect x="250" y="140" width="300" height="220"/></g><rect x="170" y="80" width="460" height="340" fill="none" stroke="${BI}" stroke-width="2.5"/>`;
+const frontFace=()=>table()+box3d(230,70,400,360,60)+`<rect x="370" y="190" width="120" height="120" fill="url(#gBlack)"/>`;
+const FT=[[340,148,180,24],[340,328,180,24],[328,160,24,180],[508,160,24,180]], HT=[385,163,90,24];
+const tape=r=>`<rect x="${r[0]}" y="${r[1]}" width="${r[2]}" height="${r[3]}" rx="2" fill="url(#gTape)" opacity=".96"/>`;
+const ghost=(r,k)=>`<rect data-k="${k}" class="ghost" x="${r[0]}" y="${r[1]}" width="${r[2]}" height="${r[3]}" rx="3"/>`;
+function foilG(x,y,id){const hr=Math.max(1.8,B.d*5);return `<g ${id?`id="${id}" class="drag"`:''} transform="translate(${x},${y})"><rect x="-90" y="-90" width="180" height="180" fill="url(#gFoil)" stroke="#7D8794" stroke-width="2"/><path d="M-70 -60 l30 18 l25 -12 M-40 50 l40 -16 l30 20 M20 -70 l12 30" stroke="#9AA4B1" stroke-width="1.5" fill="none"/><circle r="${hr}" fill="#050505"/></g>`}
+const CR=[[[250,222],[320,222]],[[560,196],[608,164]],[[201,352],[201,402]],[[420,110],[500,110]]];
+const BACK=[[190,86],[610,86],[540,134],[260,134]];
+
+/* the eight steps */
+const STEPS=[
+{short:'Box',title:'Pick a box',
+ instr:'Click a box. Its depth, from the front to the back wall, decides how wide your camera sees.',
+ mats:'a sturdy box with a lid that closes tightly',
+ why:'Any light-tight container works. A deeper box zooms in but needs longer exposures. A shallow box sees wide but its corners come out darker.',
+ go(){
+  const xs={gift:60,shoe:290,boot:540};
+  const draw=()=>{let s=table();for(const k in BOXES){const b=BOXES[k],d=b.depth*.75,x=xs[k],y=340-b.h,cx=x+b.w/2+d*.3;
+    s+=`<g data-k="${k}" class="pick${B.box===k?' sel':''}"><rect x="${x-10}" y="${y-d*.4-10}" width="${b.w+d*.6+20}" height="${b.h+d*.4+110}" fill="transparent"/>${box3d(x,y,b.w,b.h,d,{lid:true})}<text class="bt" x="${cx}" y="378" text-anchor="middle" style="font-size:23px">${b.name}</text><text class="bt" x="${cx}" y="404" text-anchor="middle" style="font-size:18px">${b.depth} mm deep</text></g>`}
+    bsvg.innerHTML=s};
+  H_.click=k=>{if(!BOXES[k])return;B.box=k;B.depth=BOXES[k].depth;draw();done(`${BOXES[k].name}: ${BOXES[k].depth} mm deep, which gives ${BOXES[k].note}.`)};
+  B.box=null;draw();bstatus('Click the box you want to use.');
+ }},
+{short:'Paint',title:'Paint the inside black',
+ instr:'Scrub the brush over the inside of the box until every wall and the floor are black.',
+ mats:'flat (matte) black paint and a brush',
+ why:'Bare cardboard reflects light around inside the box, which fogs the picture with a grey haze. Flat black soaks it up. Shiny paint would still reflect.',
+ go(){
+  bsvg.innerHTML=topDown(false);bcv.style.display='block';bctx.clearRect(0,0,800,500);
+  bover.innerHTML=tdShade()+`<circle id="brush" r="26" fill="none" stroke="#FF4F9A" stroke-width="2.5" stroke-dasharray="5 5" opacity="0"/>`;
+  T_.cells=new Set();const total=23*17;
+  const dab=(a,b)=>{bctx.save();bctx.beginPath();bctx.rect(170,80,460,340);bctx.clip();bctx.strokeStyle='rgba(22,21,27,.92)';bctx.lineWidth=52;bctx.lineCap='round';bctx.beginPath();bctx.moveTo(a.x,a.y);bctx.lineTo(b.x+.01,b.y);bctx.stroke();bctx.restore();
+    const n=Math.max(1,Math.ceil(Math.hypot(b.x-a.x,b.y-a.y)/6));
+    for(let s=0;s<=n;s++){const x=a.x+(b.x-a.x)*s/n,y=a.y+(b.y-a.y)*s/n;
+      for(let gx=0;gx<23;gx++)for(let gy=0;gy<17;gy++){const cx=180+gx*20,cy=90+gy*20;if((cx-x)**2+(cy-y)**2<=29*29)T_.cells.add(gx*100+gy)}}
+    if(B.stepOk)return;const pct=Math.round(T_.cells.size/total*100);
+    if(pct>=96){bctx.fillStyle='rgba(22,21,27,.95)';bctx.fillRect(170,80,460,340);done('All black, walls and floor. On a real box, let it dry for about an hour.')}
+    else bstatus(`Painted: ${pct}%`+(pct>80?'. Almost there. Check the corners!':''))};
+  H_.down=p=>{if(B.stepOk)return false;T_.on=true;T_.last=p;dab(p,p);return true};
+  H_.move=p=>{const br=$('#brush');if(br){br.setAttribute('cx',p.x);br.setAttribute('cy',p.y);br.setAttribute('opacity',p.x>150&&p.x<650&&p.y>60&&p.y<440&&!B.stepOk?1:0)}if(T_.on){dab(T_.last,p);T_.last=p}};
+  H_.up=()=>{T_.on=false};
+  bstatus('Painted: 0%. Press and drag to paint.');
+ }},
+{short:'Window',title:'Cut a window in the front',
+ instr:'Drag the knife along all four pencil lines to cut out the square.',
+ mats:'a craft knife (with an adult’s help), a ruler, a pencil',
+ why:'The window is just an opening for the foil to cover. About 2 cm is plenty, because the tiny hole in the foil does the real work.',
+ go(){
+  const N=12,SD=[[370,190,490,190],[490,190,490,310],[490,310,370,310],[370,310,370,190]];
+  T_.bins=SD.map(()=>Array(N).fill(false));
+  let ruler='';for(let i=0;i<=30;i++){const x=370+i*6;ruler+=`M${x} 326 v${i%10===0?14:i%5===0?10:6} `}
+  bsvg.innerHTML=frontFace()+
+   `<g id="piece"><rect x="370" y="190" width="120" height="120" fill="#D4A264" filter="url(#grain)"/><rect x="370" y="190" width="120" height="120" fill="none" stroke="#666" stroke-width="2" stroke-dasharray="7 5"/></g><g id="cuts"></g>`+
+   `<path d="M370 176 H490 M370 170 v12 M490 170 v12" stroke="#555" stroke-width="2"/><text class="bt" x="430" y="168" text-anchor="middle">2 cm</text>`+
+   `<rect x="356" y="322" width="190" height="36" rx="3" fill="#F2D27A" stroke="#8A6A1F" stroke-width="2"/><path d="${ruler}" stroke="#5A4510" stroke-width="1.5"/>`+
+   ['0','1','2 cm'].map((t,i)=>`<text class="bt" x="${370+i*60}" y="354" text-anchor="middle" style="font-size:14px">${t}</text>`).join('');
+  const mark=p=>{let ch=false;SD.forEach(([x1,y1,x2,y2],i)=>{const vx=x2-x1,vy=y2-y1,L=Math.hypot(vx,vy),t=((p.x-x1)*vx+(p.y-y1)*vy)/(L*L),dist=Math.abs((p.x-x1)*vy-(p.y-y1)*vx)/L;
+    if(dist<16&&t>-.03&&t<1.03){const b=Math.max(0,Math.min(N-1,Math.floor(t*N)));if(!T_.bins[i][b]){T_.bins[i][b]=true;ch=true}}});return ch};
+  const draw=()=>{let s='';SD.forEach(([x1,y1,x2,y2],i)=>T_.bins[i].forEach((c,b)=>{if(c)s+=`<line x1="${x1+(x2-x1)*b/N}" y1="${y1+(y2-y1)*b/N}" x2="${x1+(x2-x1)*(b+1)/N}" y2="${y1+(y2-y1)*(b+1)/N}" stroke="#2A1A10" stroke-width="3.5" stroke-linecap="round"/>`}));
+    $('#cuts').innerHTML=s;const sides=T_.bins.filter(a=>a.every(Boolean)).length;
+    if(sides===4&&!B.stepOk){$('#cuts').innerHTML='';$('#piece').classList.add('falling');done('The square drops out. Your box has a window!')}
+    else if(!B.stepOk)bstatus(`Sides cut: ${sides} of 4. Drag right along each pencil line.`)};
+  H_.down=p=>{if(B.stepOk)return false;T_.on=true;T_.last=p;if(mark(p))draw();return true};
+  H_.move=p=>{if(!T_.on)return;const a=T_.last,n=Math.max(1,Math.ceil(Math.hypot(p.x-a.x,p.y-a.y)/4));let ch=false;for(let k=1;k<=n;k++)ch=mark({x:a.x+(p.x-a.x)*k/n,y:a.y+(p.y-a.y)*k/n})||ch;T_.last=p;if(ch)draw()};
+  H_.up=()=>{T_.on=false};
+  stage.style.cursor='crosshair';bstatus('Sides cut: 0 of 4. Drag along each pencil line.');
+ }},
+{short:'Pinhole',title:'Poke the pinhole',
+ instr:'Press and hold to push the needle through the foil. Let go when the hole reaches the green zone.',
+ mats:'aluminum foil, a fine sewing needle, cardboard to press on',
+ why:()=>`The best size depends on your box. For ${B.depth} mm deep it’s about ${idealPin(B.depth).toFixed(2)} mm. A bigger hole lets the light beams overlap (blurry). A much smaller hole makes light spread out as it squeezes through, called diffraction (also blurry).`,
+ go(){
+  const ideal=idealPin(B.depth),lo=ideal*.8,hi=ideal*1.2,gx=v=>440+v/1.2*320;
+  let ticks='';for(let i=0;i<=12;i++)ticks+=`M${470+i*20} 318 v${i%5===0?14:7} `;
+  bsvg.innerHTML=table()+
+   `<rect x="50" y="120" width="330" height="300" fill="#C9965C" filter="url(#grain)" ${SK}/>`+
+   `<g transform="rotate(-3 215 275)"><rect x="70" y="138" width="290" height="270" fill="url(#gFoil)" stroke="#7D8794" stroke-width="2"/><path d="M90 170 l60 30 l50 -20 M110 360 l70 -30 l60 25 M260 160 l20 60 M300 300 l40 30" stroke="#9AA4B1" stroke-width="1.5" fill="none"/></g>`+
+   `<circle id="smallHole" cx="215" cy="275" r="0" fill="#050505"/>`+
+   `<g id="needle" transform="translate(0,-40)"><rect x="211" y="60" width="8" height="190" rx="3" fill="url(#gSteel)" stroke="#6F7680"/><path d="M211 248 L219 248 L215 274 Z" fill="#C3C9D1" stroke="#6F7680"/><ellipse cx="215" cy="76" rx="2" ry="8" fill="#D9C4A3" stroke="#6F7680"/></g>`+
+   `<defs><clipPath id="mag"><circle cx="590" cy="215" r="145"/></clipPath></defs>`+
+   `<g clip-path="url(#mag)"><rect x="440" y="65" width="300" height="300" fill="url(#gFoil)"/><path d="M460 120 l80 40 l60 -30 M480 290 l90 -30 l70 30" stroke="#9AA4B1" stroke-width="3" fill="none"/><circle id="bigHole" cx="590" cy="215" r="0" fill="#050505" stroke="#FFF" stroke-opacity=".5" stroke-width="2"/><path d="M470 318 H710 ${ticks}" stroke="#25233B" stroke-width="2" fill="none"/>`+
+   ['0','0.5','1 mm'].map((t,i)=>`<text class="bt" x="${470+i*100}" y="350" text-anchor="middle" style="font-size:15px">${t}</text>`).join('')+`</g>`+
+   `<circle cx="590" cy="215" r="145" fill="none" stroke="#2F2F36" stroke-width="12"/><path d="M693 318 L765 392" stroke="#5B3A1E" stroke-width="22" stroke-linecap="round"/>`+
+   `<text class="bt" id="readout" x="590" y="52" text-anchor="middle" style="font-size:24px"></text>`+
+   `<rect x="440" y="440" width="320" height="16" rx="8" fill="#F4EDE2" stroke="${BI}" stroke-width="2"/><rect x="${gx(lo)}" y="440" width="${gx(hi)-gx(lo)}" height="16" fill="#1FBF75"/><path id="gmark" d="M0 0 l-8 -14 h16 Z" fill="#FF4F9A" stroke="${BI}" transform="translate(440,438)"/>`+
+   `<text class="bt" x="440" y="482" style="font-size:16px">0</text><text class="bt" x="${gx(ideal)}" y="482" text-anchor="middle" style="font-size:16px">aim here: ${ideal.toFixed(2)} mm</text><text class="bt" x="760" y="482" text-anchor="end" style="font-size:16px">1.2 mm</text>`;
+  T_.d=0;
+  const upd=()=>{const d=T_.d;$('#smallHole').setAttribute('r',d?Math.max(1.2,d*4):0);$('#bigHole').setAttribute('r',d*100);$('#gmark').setAttribute('transform',`translate(${gx(Math.min(1.2,d))},438)`);$('#readout').textContent=d?`Hole: ${d.toFixed(2)} mm`:'Hole: not poked yet'};
+  const my=T_;
+  const loop=ts=>{if(T_!==my||!T_.press)return;const dt=T_.lt?(ts-T_.lt)/1000:0;T_.lt=ts;T_.d=T_.d<.06?.06:Math.min(1.2,T_.d+.2*dt);upd();if(T_.d>=1.2){release();return}T_.raf=requestAnimationFrame(loop)};
+  const press=()=>{if(T_!==my||B.stepOk||T_.fail||T_.press)return;T_.press=true;T_.lt=0;$('#needle').setAttribute('transform','translate(0,0)');bstatus('Pushing… let go in the green zone.');T_.raf=requestAnimationFrame(loop)};
+  const release=()=>{if(T_!==my||!T_.press)return;T_.press=false;cancelAnimationFrame(T_.raf);$('#needle').setAttribute('transform','translate(0,-40)');const d=T_.d;
+    if(d>hi){T_.fail=true;bstatus(`Too big: ${d.toFixed(2)} mm. A big hole makes blurry pictures. Click “Redo this step” for a fresh piece of foil.`,'bad')}
+    else if(d<lo)bstatus(`${d.toFixed(2)} mm is still a little small. Press again to push the needle further.`,'warn');
+    else{B.d=d;done(`A ${d.toFixed(2)} mm pinhole, just right for your ${B.depth} mm box. On real foil, sand the back gently to smooth the edge.`)}};
+  H_.down=()=>{press();return true};H_.up=release;
+  bctrl.innerHTML='<button class="btn hot" id="needleBtn">Hold to push the needle</button>';
+  const nb=$('#needleBtn');nb.addEventListener('pointerdown',e=>{e.preventDefault();press()});['pointerup','pointerleave','pointercancel'].forEach(t=>nb.addEventListener(t,release));
+  nb.addEventListener('keydown',e=>{if((e.key===' '||e.key==='Enter')&&!e.repeat){e.preventDefault();press()}});nb.addEventListener('keyup',e=>{if(e.key===' '||e.key==='Enter'){e.preventDefault();release()}});
+  upd();bstatus('Press and hold on the foil, or use the button under the picture.');
+ }},
+{short:'Foil',title:'Tape the foil over the window',
+ instr:'Drag the foil so the pinhole sits in the middle of the window. Then click each pink outline to tape that edge.',
+ mats:'black electrical tape',
+ why:'A pinhole that isn’t centered makes a lopsided picture with one side darker. Taping all four edges means the pinhole is the only way in for light.',
+ go(){
+  T_.pos=[118,375];T_.placed=false;T_.t=[0,0,0,0];
+  const draw=()=>{bsvg.innerHTML=frontFace()+(T_.placed?'':`<text class="bt" x="118" y="268" text-anchor="middle">drag the foil</text>`)+foilG(T_.pos[0],T_.pos[1],'foil')+(T_.placed?FT.map((r,i)=>T_.t[i]?tape(r):ghost(r,'t'+i)).join(''):'')};
+  draw();
+  H_.down=(p,e)=>{if(T_.placed||!e.target.closest('#foil'))return false;T_.drag=true;T_.off=[p.x-T_.pos[0],p.y-T_.pos[1]];return true};
+  H_.move=p=>{if(!T_.drag)return;T_.pos=[p.x-T_.off[0],p.y-T_.off[1]];$('#foil').setAttribute('transform',`translate(${T_.pos[0]},${T_.pos[1]})`)};
+  H_.up=()=>{if(!T_.drag)return;T_.drag=false;if(near(T_.pos,[430,250])<45){T_.pos=[430,250];T_.placed=true;draw();bstatus('Lined up! Now click each pink outline to tape that edge.')}else bstatus('Slide it so the pinhole sits right in the middle of the dark window.','warn')};
+  H_.click=k=>{if(!/^t\d$/.test(k))return;T_.t[+k[1]]=1;draw();const n=T_.t.filter(Boolean).length;if(n===4)done('Taped on all four sides. Now light can only get in through the pinhole.');else bstatus(`Taped ${n} of 4 edges.`)};
+  bstatus('Drag the foil onto the front of the box.');
+ }},
+{short:'Shutter',title:'Add a shutter flap',
+ instr:'Drag the black flap over the pinhole, then click the pink outline to tape its top edge. Click the flap to test it.',
+ mats:'a piece of black card and tape',
+ why:'The flap starts and stops the picture. Taping only the top makes it swing like a door, so you can lift it without bumping the camera.',
+ go(){
+  T_.pos=[110,240];T_.placed=false;T_.hinge=false;T_.lift=false;
+  const flap=()=>`<g id="flap" class="drag" transform="translate(${T_.pos[0]},${T_.pos[1]})"><g transform="scale(1,${T_.lift?.14:1})"><rect x="-35" y="0" width="70" height="140" rx="3" fill="url(#gBlack)" stroke="#000" stroke-width="2"/></g></g>`;
+  const draw=()=>{bsvg.innerHTML=frontFace()+foilG(430,250)+FT.map(tape).join('')+(T_.placed?'':`<text class="bt" x="110" y="226" text-anchor="middle">shutter flap</text>`)+flap()+(T_.placed?(T_.hinge?tape(HT):ghost(HT,'hinge')):'')+(T_.hinge?`<rect data-k="flapT" x="392" y="187" width="76" height="130" fill="transparent"/>`:'')};
+  draw();
+  H_.down=(p,e)=>{if(T_.placed||!e.target.closest('#flap'))return false;T_.drag=true;T_.off=[p.x-T_.pos[0],p.y-T_.pos[1]];return true};
+  H_.move=p=>{if(!T_.drag)return;T_.pos=[p.x-T_.off[0],p.y-T_.off[1]];$('#flap').setAttribute('transform',`translate(${T_.pos[0]},${T_.pos[1]})`)};
+  H_.up=()=>{if(!T_.drag)return;T_.drag=false;if(near(T_.pos,[430,175])<45){T_.pos=[430,175];T_.placed=true;draw();bstatus('It covers the pinhole. Click the pink outline to tape just the top edge, like a hinge.')}else bstatus('Drag the flap so it hangs down over the pinhole.','warn')};
+  H_.click=k=>{if(k==='hinge'&&!T_.hinge){T_.hinge=true;draw();done('Hinged! Click the flap to lift it and see the pinhole. Click again to close it. That’s your shutter.')}
+    else if(k==='flapT'){T_.lift=!T_.lift;draw();bstatus(T_.lift?'Shutter open: light can get in.':'Shutter closed: no light gets in.','good')}};
+  bstatus('Drag the black flap over the pinhole.');
+ }},
+{short:'Leaks',title:'Check for light leaks',
+ instr:'There’s a flashlight switched on inside the closed box. Turn off the room lights, then click every crack that glows to tape it.',
+ mats:'a flashlight and more black tape',
+ why:'During a long exposure, even a hairline crack lets in enough light to fog the paper. Test before loading paper, since the flashlight would ruin it.',
+ go(){
+  B.dark=false;T_.t=[0,0,0,0];
+  const draw=()=>{let s=table()+box3d(200,190,320,220,200,{lid:true,front:true})+`<text class="bt" x="40" y="470" style="font-size:19px">A flashlight is switched on inside this closed box.</text>`;
+    s+=`<rect width="800" height="500" fill="#0B0A14" opacity="${B.dark?.88:0}" pointer-events="none"/>`;
+    CR.forEach(([a,b],i)=>{s+=T_.t[i]?`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#3A3942" stroke-width="16"/>`
+      :`<g data-k="c${i}" opacity="${B.dark?1:0}"><line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#FFE68A" stroke-width="5" stroke-linecap="round" filter="url(#glow)"/><line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="transparent" stroke-width="30"/></g>`});
+    bsvg.innerHTML=s+lightSwitch(!B.dark);
+    bctrl.innerHTML=`<button class="btn" id="lsBtn">${B.dark?'Turn the lights on':'Turn the lights off'}</button>`;$('#lsBtn').onclick=toggle};
+  const left=()=>T_.t.filter(x=>!x).length;
+  const toggle=()=>{B.dark=!B.dark;draw();if(B.stepOk)return;bstatus(B.dark?`See the glowing cracks? That’s flashlight light escaping. Click each one to tape it. ${left()} left.`:'Turn the lights off to see if any light leaks out.')};
+  H_.click=k=>{if(k==='switch')return toggle();if(!/^c\d$/.test(k)||!B.dark)return;T_.t[+k[1]]=1;draw();const n=left();if(!n)done('No more glowing cracks: your box is light-tight! (On a real box, take the flashlight out now.)');else bstatus(`Taped! ${n} leak${n>1?'s':''} left.`)};
+  draw();bstatus('Turn the lights off to see if any light leaks out.');
+ }},
+{short:'Paper',title:'Load the photo paper in the dark',
+ instr:'Lights off first. Open the envelope, flip the sheet so the shiny side is up, drag it to the back wall, tape the corners, then put the lid on.',
+ mats:'black-and-white photo paper, a red safelight, tape',
+ why:'Photo paper is ruined by ordinary light but can’t “see” dim red light. The shiny side carries the light-sensitive coating, so it has to face the pinhole.',
+ go(){
+  T_.state='env';T_.side='back';T_.pos=[722,235];T_.pt=[0,0];T_.lid=false;T_.fog=false;const my=T_;
+  const sheet=()=>{const [x,y]=T_.pos,f=T_.fog,front=T_.side==='front';
+    return `<g id="sheet" class="drag" transform="translate(${x},${y})"><rect x="-55" y="-40" width="110" height="80" fill="${f?'#8E8E8E':front?'url(#gGloss)':'#ECEAE4'}" stroke="#777" stroke-width="1.5"/>${!f&&!front?'<text y="-6" text-anchor="middle" font-size="11" fill="#9A9A9A" font-family="sans-serif">PHOTO PAPER</text><text y="12" text-anchor="middle" font-size="11" fill="#9A9A9A" font-family="sans-serif">PHOTO PAPER</text>':''}${!f&&front?'<path d="M-46 34 L-6 -34 M-30 36 L10 -34" stroke="#FFF" stroke-width="6"/>':''}${f?'<text y="6" text-anchor="middle" font-size="16" fill="#333" font-family="sans-serif">fogged</text>':''}</g>`};
+  const draw=()=>{const lt=B.dark?'bt light':'bt';
+    let s=topDown(true)+`<rect x="384" y="378" width="32" height="26" fill="url(#gFoil)" stroke="#7D8794"/><circle cx="400" cy="391" r="2" fill="#000"/>`;
+    if(T_.state==='placed'||T_.lid)s+=`<polygon points="${PT(BACK)}" fill="url(#gGloss)" stroke="#888"/>`+[[196,80,44,14],[560,80,44,14]].map((r,i)=>T_.pt[i]?tape(r):ghost(r,'pt'+i)).join('');
+    if(T_.state==='out')s+=`<polygon points="${PT(BACK)}" class="ghost" pointer-events="none"/>`;
+    s+=`<g data-k="env"><rect x="655" y="380" width="130" height="90" rx="4" fill="#1B1B22" stroke="#000"/><rect x="655" y="395" width="130" height="16" fill="#FF8A1F"/><text x="720" y="438" text-anchor="middle" font-size="13" fill="#FFF" font-family="sans-serif">PHOTO PAPER</text><text x="720" y="457" text-anchor="middle" font-size="10" fill="#BBB" font-family="sans-serif">open in darkroom only</text></g>`;
+    if(T_.state==='out'||T_.fog)s+=sheet();
+    if(T_.lid)s+=`<rect x="146" y="56" width="508" height="388" fill="url(#gTop)" filter="url(#grain)" ${SK}/><text class="bt" x="400" y="256" text-anchor="middle" style="font-size:26px">lid on and taped</text>`;
+    s+=`<rect width="800" height="500" fill="#8A0010" style="mix-blend-mode:multiply" opacity="${B.dark?.85:0}" pointer-events="none"/>`;
+    if(T_.state==='out')s+=`<g data-k="flip"><rect x="672" y="292" width="100" height="34" rx="8" fill="#FFF" stroke="${BI}" stroke-width="2"/><text class="bt" x="722" y="315" text-anchor="middle" style="font-size:18px">Flip sheet</text></g><text class="${lt}" x="722" y="186" text-anchor="middle" style="font-size:17px">${T_.side==='front'?'shiny side up':'back side up'}</text>`;
+    if(T_.state==='placed'&&T_.pt[0]&&T_.pt[1]&&!T_.lid)s+=`<g data-k="lid"><rect x="150" y="60" width="500" height="380" class="ghost"/><text class="bt light" x="400" y="256" text-anchor="middle" style="font-size:26px">Click to put the lid on</text></g>`;
+    bsvg.innerHTML=s+lightSwitch(!B.dark);
+    bctrl.innerHTML=`<button class="btn" id="lsBtn">${B.dark?'Turn the lights on':'Turn the lights off'}</button>`;$('#lsBtn').onclick=toggle};
+  const reset=()=>{T_.state='env';T_.side='back';T_.pos=[722,235];T_.pt=[0,0]};
+  const toggle=()=>{B.dark=!B.dark;
+    if(!B.dark&&!T_.lid&&(T_.state==='out'||T_.state==='placed')){reset();draw();bstatus('Oh no! The lights came on while the paper was out, so it’s fogged. Lights off again and use a fresh sheet.','bad');return}
+    draw();if(B.stepOk)return;bstatus(B.dark?'Red safelight on. Photo paper can’t see red light. Now open the envelope.':'Turn the lights off before you open the photo paper.')};
+  H_.click=k=>{
+    if(k==='switch')return toggle();
+    if(k==='env'&&T_.state==='env'&&!T_.fog){
+      if(!B.dark){T_.fog=true;draw();bstatus('Fogged! You opened the paper in normal light, so the whole sheet turned grey. Turn the lights off first.','bad');setTimeout(()=>{if(T_===my){T_.fog=false;draw()}},2200);return}
+      T_.state='out';draw();bstatus('A sheet is out. The shiny side has to face the pinhole, so flip it if needed. Then drag it onto the back wall (the top of the box in this view).');return}
+    if(k==='flip'&&T_.state==='out'){T_.side=T_.side==='front'?'back':'front';draw();return}
+    if(/^pt\d$/.test(k)){T_.pt[+k[2]]=1;draw();if(T_.pt[0]&&T_.pt[1])bstatus('The paper is secure. Now put the lid on.');return}
+    if(k==='lid'){T_.lid=true;T_.state='lid';draw();done('Loaded and sealed. It’s safe to turn the lights back on now. Your camera is ready!')}};
+  H_.down=(p,e)=>{if(T_.state!=='out'||!e.target.closest('#sheet'))return false;T_.drag=true;T_.off=[p.x-T_.pos[0],p.y-T_.pos[1]];return true};
+  H_.move=p=>{if(!T_.drag)return;T_.pos=[p.x-T_.off[0],p.y-T_.off[1]];$('#sheet').setAttribute('transform',`translate(${T_.pos[0]},${T_.pos[1]})`)};
+  H_.up=()=>{if(!T_.drag)return;T_.drag=false;const [x,y]=T_.pos;
+    if(x>170&&x<630&&y>40&&y<175){
+      if(T_.side!=='front'){T_.pos=[722,235];draw();bstatus('That’s the back of the sheet (see the printing?). The shiny side must face the pinhole. Flip it and try again.','warn')}
+      else{T_.state='placed';draw();bstatus('Shiny side facing the pinhole. Click the two pink outlines to tape the corners.')}}
+    else{T_.pos=[722,235];draw();bstatus('Drag the sheet onto the back wall: the top side of the box in this view.','warn')}};
+  draw();bstatus(B.dark?'Red safelight on. Open the envelope.':'Turn the lights off before you open the photo paper.');
+ }}
+];
+
+function finale(){
+  B.dark=false;const b=BOXES[B.box]||BOXES.shoe,N=Math.round(B.depth/B.d);
+  store.set('pinhole-cam',{box:B.box,name:b.name,depth:B.depth,d:B.d});S.touched=false;
+  bsvg.innerHTML=table()+box3d(250,210,300,200,B.depth*1.1,{lid:true,front:true})+
+   `<text class="bt" x="40" y="70" style="font-size:26px">${b.name} pinhole camera</text>`+
+   `<text class="bt" x="40" y="104">${B.depth} mm deep</text><text class="bt" x="40" y="132">${B.d.toFixed(2)} mm pinhole</text><text class="bt" x="40" y="160">about f/${N}</text><text class="bt" x="40" y="188">loaded with photo paper</text>`+
+   `<path d="M200 320 Q280 360 386 334" fill="none" stroke="#FF4F9A" stroke-width="3"/><text class="bt" x="120" y="316">shutter</text>`;
+  $('#bNum').textContent='All 8 steps done';$('#bTitle').textContent='Your camera is ready!';
+  $('#bInstr').textContent=`${b.name}, ${B.depth} mm deep, with a ${B.d.toFixed(2)} mm pinhole. These settings are already loaded in “Take pictures.”`;
+  $('#bMats').textContent='';bstatus('Remember: keep the shutter closed until you’re aimed and holding still.','good');
+}
+function bRender(){
+  H_={};T_={};B.stepOk=false;stage.style.cursor='';bcv.style.display='none';bover.innerHTML='';bctrl.innerHTML='';
+  $('#bprog').innerHTML=STEPS.map((s,i)=>`<li class="${i<B.i?'done':i===B.i?'now':''}"><b>${i<B.i?'✓':i+1}</b>${s.short}</li>`).join('');
+  const fin=B.i>=STEPS.length;
+  $('#bNext').hidden=fin;$('#bGo').hidden=!fin;$('#bWhyBox').hidden=fin;$('#bRedo').textContent=fin?'Build another':'Redo this step';
+  if(fin){finale();return}
+  const st=STEPS[B.i];
+  $('#bNum').textContent=`Step ${B.i+1} of ${STEPS.length}`;$('#bTitle').textContent=st.title;$('#bInstr').textContent=st.instr;
+  $('#bMats').textContent='You need: '+st.mats;$('#bWhy').textContent=typeof st.why==='function'?st.why():st.why;
+  $('#bNext').disabled=true;$('#bNext').textContent=B.i===STEPS.length-1?'Finish':'Next step';
+  st.go();
+}
+$('#bNext').onclick=()=>{if(!B.stepOk)return;B.i++;bRender()};
+$('#bRedo').onclick=()=>{if(B.i>=STEPS.length){B.i=0;B.box=null;B.d=0;B.dark=false}bRender()};
+
+/* ================= SHOOT: drawing kit ================= */
+const W=1000,H=600,OW=500,OH=400,ISO=6,LAMBDA=0.00055,INK='#2A2540';
+let R=Math.random;
+function seed(s){let x=s;R=()=>{x=(x*16807)%2147483647;return x/2147483647}}
+const J=a=>(R()-.5)*2*a;
+function trace(c,pts,closed,j){c.beginPath();pts.forEach(([x,y],i)=>{x+=J(j);y+=J(j);i?c.lineTo(x,y):c.moveTo(x,y)});if(closed)c.closePath()}
+function scribble(c,pts,color,gap){
+  const a=c.globalAlpha;c.save();trace(c,pts,true,0);c.clip();
+  const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]),x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys),h=y1-y0;
+  c.strokeStyle=color;c.lineWidth=gap*.7;c.lineCap='round';c.globalAlpha=a*.55;c.beginPath();
+  for(let x=x0-h;x<x1+gap;x+=gap){c.moveTo(x+J(2),y1+4);c.lineTo(x+h+J(4),y0-4)}
+  c.stroke();c.restore();c.globalAlpha=a;
+}
+function shape(c,pts,fill,o={}){
+  const j=o.j??2.2,lw=o.lw??4,closed=!o.open,a=c.globalAlpha;
+  if(fill){c.fillStyle=fill;trace(c,pts,closed,j*.5);c.fill()}
+  if(o.scr)scribble(c,pts,o.scr,o.sg||13);
+  if(lw){c.lineJoin='round';c.lineCap='round';c.strokeStyle=o.stroke||INK;c.lineWidth=lw;trace(c,pts,closed,j);c.stroke();
+    c.globalAlpha=a*.45;c.lineWidth=lw*.55;trace(c,pts,closed,j*1.6);c.stroke();c.globalAlpha=a}
+}
+function rect(x,y,w,h,n=3){const p=[];for(let i=0;i<n;i++)p.push([x+w*i/n,y]);for(let i=0;i<n;i++)p.push([x+w,y+h*i/n]);for(let i=0;i<n;i++)p.push([x+w-w*i/n,y+h]);for(let i=0;i<n;i++)p.push([x,y+h-h*i/n]);return p}
+function ell(cx,cy,rx,ry=rx,n=24,a0=0,a1=Math.PI*2){const p=[],full=a1-a0>=Math.PI*2-1e-6,m=full?n:n+1;for(let i=0;i<m;i++){const a=a0+(a1-a0)*i/n;p.push([cx+Math.cos(a)*rx,cy+Math.sin(a)*ry])}return p}
+function ln(c,pts,color=INK,lw=4,j=1.5){c.strokeStyle=color;c.lineWidth=lw;c.lineCap='round';c.lineJoin='round';trace(c,pts,false,j);c.stroke()}
+function mk(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return c}
+
+/* realistic scene painting */
+function lin(c,x0,y0,x1,y1,st){const g=c.createLinearGradient(x0,y0,x1,y1);st.forEach(([o,k])=>g.addColorStop(o,k));return g}
+function radg(c,x,y,r,st,fx=x,fy=y){const g=c.createRadialGradient(fx,fy,0,x,y,r);st.forEach(([o,k])=>g.addColorStop(o,k));return g}
+function fp(c,pts,f){c.beginPath();pts.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath();c.fillStyle=f;c.fill()}
+function fr(c,x,y,w,h,f){c.fillStyle=f;c.fillRect(x,y,w,h)}
+function dot(c,x,y,r,f){c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fillStyle=f;c.fill()}
+function oval(c,x,y,rx,ry,f){c.beginPath();c.ellipse(x,y,rx,ry,0,0,Math.PI*2);c.fillStyle=f;c.fill()}
+function sline(c,pts,col,w){c.strokeStyle=col;c.lineWidth=w;c.lineCap='round';c.lineJoin='round';c.beginPath();pts.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.stroke()}
+function softCloud(c,x,y,s,col,a){for(let i=0;i<16;i++){const cx=x+(R()-.5)*170*s,cy=y+(R()-.5)*36*s,r=(28+R()*42)*s;c.fillStyle=radg(c,cx,cy,r,[[0,`rgba(${col},${a})`],[.6,`rgba(${col},${a*.6})`],[1,`rgba(${col},0)`]]);c.beginPath();c.arc(cx,cy,r,0,7);c.fill()}}
+function grass(c,y0,y1,cols,n){for(let i=0;i<n;i++){const t=Math.pow(R(),.8),y=y0+t*(y1-y0),x=R()*W,h=2+t*11;c.strokeStyle=cols[(R()*cols.length)|0];c.lineWidth=.8+t*1.4;c.beginPath();c.moveTo(x,y);c.lineTo(x+(R()-.5)*5,y-h);c.stroke()}}
+function foliage(c,cx,cy,rx,ry,n,pal){
+  oval(c,cx,cy+ry*.1,rx*.95,ry*.9,pal[3]);
+  const L=[];for(let i=0;i<n;i++){const a=R()*Math.PI*2,d=Math.sqrt(R());L.push([cx+Math.cos(a)*rx*d,cy+Math.sin(a)*ry*d,rx/12+R()*rx/8])}
+  L.sort((p,q)=>q[1]-p[1]);
+  for(const [x,y,r] of L){c.fillStyle=radg(c,x,y,r,[[0,pal[0]],[.55,pal[1]],[1,pal[2]]],x-r*.35,y-r*.45);c.beginPath();c.arc(x,y,r,0,7);c.fill()}
+}
+const LEAF_SUN=['#A8DB7A','#4E9B3C','#245E25','#1E4A1F'],LEAF_DULL=['#8DB37A','#4F7A45','#2B4C2A','#253F24'];
+function realTree(c,x,base,s,pal){
+  oval(c,x+30*s,base+4,90*s,12*s,'rgba(20,40,10,.25)');
+  fp(c,[[x-14*s,base],[x-8*s,base-90*s],[x-4*s,base-120*s],[x+5*s,base-120*s],[x+9*s,base-90*s],[x+16*s,base]],lin(c,x-14*s,0,x+16*s,0,[[0,'#3E2715'],[.45,'#7A5232'],[1,'#3A2414']]));
+  sline(c,[[x,base-95*s],[x-35*s,base-135*s]],'#4A3020',6*s);sline(c,[[x+2*s,base-100*s],[x+38*s,base-140*s]],'#4A3020',6*s);
+  foliage(c,x,base-150*s,85*s,70*s,260,pal);
+}
+function treeLine(c,y,rgb){for(let i=0;i<42;i++){const x=i*25+R()*10,r=20+R()*20;dot(c,x,y-R()*14,r,`rgba(${rgb[0]+R()*20|0},${rgb[1]+R()*25|0},${rgb[2]},.9)`)}}
+function sceneSunny(c){
+  seed(11);
+  fr(c,0,0,W,400,lin(c,0,0,0,400,[[0,'#3D86D4'],[.6,'#8EC3EE'],[1,'#D8ECFA']]));
+  c.fillStyle=radg(c,820,110,260,[[0,'rgba(255,255,240,1)'],[.12,'rgba(255,250,215,.95)'],[.3,'rgba(255,240,190,.35)'],[1,'rgba(255,240,190,0)']]);c.fillRect(0,0,W,400);
+  softCloud(c,170,95,1,'255,255,255',.75);softCloud(c,560,70,.7,'255,255,255',.6);
+  treeLine(c,374,[60,105,60]);
+  fr(c,0,380,W,220,lin(c,0,380,0,600,[[0,'#7DB85A'],[1,'#4C8A33']]));
+  grass(c,382,600,['#5E9C40','#8BC665','#477F2E','#9AD16E'],2600);
+  fr(c,0,350,W,8,lin(c,0,350,0,358,[[0,'#F4F4F4'],[1,'#BDBDBD']]));fr(c,0,384,W,8,lin(c,0,384,0,392,[[0,'#F4F4F4'],[1,'#BDBDBD']]));
+  for(let x=4;x<W;x+=40){fp(c,[[x,404],[x,336],[x+12,324],[x+24,336],[x+24,404]],lin(c,x,0,x+24,0,[[0,'#FFFFFF'],[1,'#CFCFCF']]));fr(c,x+24,340,4,64,'rgba(0,0,0,.12)')}
+  fp(c,[[545,402],[595,402],[680,600],[455,600]],lin(c,0,402,0,600,[[0,'#D9CBB2'],[1,'#B9A586']]));
+  c.strokeStyle='rgba(90,70,50,.35)';c.lineWidth=1.5;for(let y=420;y<600;y+=28){const t=(y-402)/198;c.beginPath();c.moveTo(545-90*t,y);c.lineTo(595+85*t,y);c.stroke()}
+  fp(c,[[690,402],[770,402],[745,250],[690,250]],'rgba(20,40,10,.2)');
+  fr(c,640,150,30,80,lin(c,640,0,670,0,[[0,'#A2493A'],[1,'#7A3226']]));for(let y=158;y<230;y+=10)fr(c,640,y,30,1.5,'rgba(230,200,190,.45)');
+  fr(c,450,235,240,167,lin(c,0,235,0,402,[[0,'#F3E0C0'],[1,'#DDBF94']]));
+  for(let y=242;y<402;y+=11)fr(c,450,y,240,1.2,'rgba(120,90,55,.28)');
+  fr(c,450,235,8,167,'#FAFAF7');fr(c,682,235,8,167,'#E6E3DC');
+  fr(c,450,240,240,16,lin(c,0,240,0,256,[[0,'rgba(0,0,0,.35)'],[1,'rgba(0,0,0,0)']]));
+  fp(c,[[420,245],[570,132],[720,245]],lin(c,0,132,0,245,[[0,'#7E3A2C'],[1,'#562419']]));
+  c.save();c.beginPath();c.moveTo(420,245);c.lineTo(570,132);c.lineTo(720,245);c.closePath();c.clip();
+  for(let y=140,r=0;y<246;y+=12,r++){fr(c,400,y,340,1.6,'rgba(30,10,5,.45)');for(let x=400+(r%2)*9;x<740;x+=18)fr(c,x,y,1.2,12,'rgba(30,10,5,.3)')}
+  c.restore();fr(c,416,243,308,5,'#EFEDE8');
+  [475,615].forEach(x=>{fr(c,x-4,264,58,52,'#FAFAF8');fr(c,x,268,50,44,lin(c,x,268,x+50,312,[[0,'#BFE0F5'],[.5,'#6F9DC0'],[1,'#3F6A8C']]));
+    fp(c,[[x+6,268],[x+20,268],[x+6,290]],'rgba(255,255,255,.35)');fr(c,x+24,268,3,44,'#FAFAF8');fr(c,x,288,50,3,'#FAFAF8');fr(c,x-8,316,66,5,'#E9E6DF');
+    fr(c,x-16,264,10,52,'#2F5A3A');fr(c,x+56,264,10,52,'#2F5A3A')});
+  fr(c,541,296,58,106,'#F5F4EF');fr(c,545,300,50,102,lin(c,545,0,595,0,[[0,'#2F5A8C'],[1,'#1F3F66']]));
+  [[551,308],[573,308],[551,352],[573,352]].forEach(([x,y])=>{fr(c,x,y,17,38,'rgba(0,0,0,.18)');fr(c,x,y,17,2,'rgba(255,255,255,.18)')});
+  dot(c,587,354,4,radg(c,587,354,4,[[0,'#FFF3B0'],[1,'#B88A1E']],586,353));
+  fr(c,535,400,70,8,lin(c,0,400,0,408,[[0,'#D8D6D0'],[1,'#A9A6A0']]));
+  realTree(c,330,402,1,LEAF_SUN);
+  [[300,265],[360,280],[330,225],[285,300],[372,240]].forEach(([x,y])=>dot(c,x,y,6,radg(c,x,y,6,[[0,'#FF9A9A'],[.5,'#D7263D'],[1,'#7E1622']],x-2,y-2)));
+  for(let i=0;i<80;i++){const x=R()*W,y=420+R()*170;if(x>440&&x<700)continue;dot(c,x,y,2+R()*2,['#FF6FA8','#FFD23F','#FFFFFF','#B06BFF'][(R()*4)|0])}
+}
+function sceneCloudy(c){
+  seed(23);
+  fr(c,0,0,W,400,lin(c,0,0,0,400,[[0,'#8C96A1'],[.6,'#B4BCC5'],[1,'#D3D8DD']]));
+  softCloud(c,200,80,1.6,'220,225,230',.7);softCloud(c,600,120,1.5,'205,210,218',.7);softCloud(c,880,60,1.3,'225,229,234',.6);softCloud(c,420,40,1.2,'190,196,205',.5);
+  treeLine(c,380,[80,100,85]);
+  fr(c,0,385,W,215,lin(c,0,385,0,600,[[0,'#7F9E6C'],[1,'#56764A']]));
+  grass(c,387,600,['#62815A','#8AA978','#4E6B44','#97B386'],2400);
+  oval(c,700,478,175,44,'#5B6A55');oval(c,700,476,168,40,lin(c,0,436,0,516,[[0,'#C9D1D8'],[1,'#7F909E']]));
+  c.strokeStyle='rgba(255,255,255,.35)';c.lineWidth=1.5;for(let i=0;i<7;i++){const y=455+i*8;c.beginPath();c.moveTo(600+R()*60,y);c.lineTo(700+R()*80,y);c.stroke()}
+  [[655,470,0],[748,482,1]].forEach(([x,y,i])=>{oval(c,x,y,13,7,i?'#F2F0EA':'#6B5A3E');dot(c,x+10,y-7,5,i?'#F2F0EA':'#2F5A3A');fp(c,[[x+14,y-8],[x+21,y-6],[x+14,y-5]],'#E59A2C')});
+  realTree(c,280,410,1.05,LEAF_DULL);realTree(c,870,400,.7,LEAF_DULL);
+  fr(c,614,250,10,180,lin(c,614,0,624,0,[[0,'#2F3238'],[.5,'#6A6F78'],[1,'#25282D']]));fr(c,606,425,26,8,'#2F3238');
+  fp(c,[[604,250],[634,250],[628,222],[610,222]],lin(c,0,222,0,250,[[0,'#FFF4C2'],[1,'#E4D190']]));fr(c,602,216,34,8,'#2F3238');
+  oval(c,515,458,95,8,'rgba(0,0,0,.2)');
+  [442,580].forEach(x=>fr(c,x,372,6,84,'#2E2E32'));
+  [[378,10],[392,10],[414,8],[424,8]].forEach(([y,h])=>fr(c,430,y,165,h,lin(c,0,y,0,y+h,[[0,'#B07A4A'],[1,'#7A5030']])));
+}
+function sceneIndoor(c){
+  seed(37);
+  fr(c,0,0,W,470,radg(c,760,180,900,[[0,'#FFF1D8'],[.35,'#EFD4AA'],[1,'#B48E64']]));
+  fr(c,0,455,W,16,lin(c,0,455,0,471,[[0,'#FFFFFF'],[1,'#D9D4CA']]));
+  fr(c,630,60,280,240,'#F7F5F0');
+  const win=lin(c,0,75,0,285,[[0,'#7FB5E6'],[1,'#D7ECFA']]);
+  [[645,75],[775,75],[645,185],[775,185]].forEach(([x,y])=>fr(c,x,y,120,100,win));
+  c.save();c.beginPath();c.rect(645,75,250,210);c.clip();foliage(c,700,265,90,50,120,LEAF_SUN);foliage(c,860,245,70,60,100,LEAF_SUN);c.restore();
+  fr(c,765,75,10,210,'#F7F5F0');fr(c,645,175,250,10,'#F7F5F0');
+  [[645,75],[775,75],[645,185],[775,185]].forEach(([x,y])=>fp(c,[[x+8,y],[x+40,y],[x+8,y+40]],'rgba(255,255,255,.25)'));
+  fr(c,620,298,300,12,lin(c,0,298,0,310,[[0,'#FFFFFF'],[1,'#CFCAC0']]));
+  fp(c,[[600,40],[640,40],[632,330],[592,330]],lin(c,592,0,640,0,[[0,'#8F3B4A'],[.5,'#C25A6C'],[1,'#7A2E3B']]));
+  fp(c,[[900,40],[940,40],[948,330],[908,330]],lin(c,900,0,948,0,[[0,'#7A2E3B'],[.5,'#C25A6C'],[1,'#8F3B4A']]));
+  fr(c,590,34,360,8,'#5A4030');
+  fr(c,105,105,160,120,lin(c,105,105,265,225,[[0,'#8A5A2E'],[1,'#5A3A1C']]));fr(c,117,117,136,96,lin(c,0,117,0,213,[[0,'#F2B880'],[.55,'#E07A5F'],[1,'#3D405B']]));
+  fp(c,[[117,213],[160,170],[195,195],[225,160],[253,190],[253,213]],'#2E3A4A');
+  for(let i=0;i<10;i++){const y=471+i*13;fr(c,0,y,W,13,lin(c,0,y,0,y+13,[[0,i%2?'#A87648':'#996739'],[1,i%2?'#93633A':'#87592F']]));for(let x=(i*137)%220;x<W;x+=220)fr(c,x,y,2,13,'rgba(40,20,5,.35)')}
+  fp(c,[[700,471],[930,471],[990,600],[720,600]],'rgba(255,236,190,.28)');
+  oval(c,500,478,280,12,'rgba(40,20,5,.35)');
+  [255,730].forEach(x=>fr(c,x,392,18,82,lin(c,x,0,x+18,0,[[0,'#5A3418'],[.5,'#8B5A33'],[1,'#4A2A12']])));
+  fp(c,[[250,358],[750,358],[778,388],[222,388]],lin(c,0,358,0,388,[[0,'#A06A3E'],[1,'#7E4E28']]));
+  fr(c,222,388,556,10,'#5E3819');
+  const fruit=(x,y,r,a,b2,d)=>dot(c,x,y,r,radg(c,x,y,r,[[0,a],[.6,b2],[1,d]],x-r*.35,y-r*.4));
+  fp(c,[[372,336],[410,300],[470,288],[440,312]],lin(c,372,300,470,320,[[0,'#F6E27A'],[1,'#C9A93A']]));
+  fruit(405,322,30,'#FFD08A','#F08A24','#A9550E');fruit(458,316,30,'#FF9A9A','#D7263D','#7E1622');
+  [[495,330],[510,320],[505,342],[520,334],[488,342]].forEach(([x,y])=>fruit(x,y,10,'#C9A0FF','#6B3FA0','#3A1F5C'));
+  c.beginPath();c.ellipse(450,338,92,36,0,0,Math.PI);c.closePath();c.fillStyle=lin(c,358,0,542,0,[[0,'#1E3E70'],[.35,'#4E7EC2'],[1,'#17305A']]);c.fill();
+  oval(c,450,338,92,7,'#E8EEF6');oval(c,450,338,86,4,'#C8D3E2');
+  oval(c,603,360,30,5,'rgba(40,20,5,.3)');
+  fp(c,[[590,358],[580,320],[594,288],[612,288],[626,320],[616,358]],lin(c,580,0,626,0,[[0,'#3A6B5A'],[.4,'#7FB8A2'],[1,'#2E5546']]));
+  sline(c,[[600,290],[586,236]],'#3F7A34',3);sline(c,[[604,290],[620,224]],'#3F7A34',3);sline(c,[[602,290],[603,256]],'#3F7A34',3);
+  fruit(585,232,15,'#FFC1DA','#E85A92','#9C2A5A');fruit(621,220,15,'#FFF3A8','#F2C230','#A87F12');fruit(603,252,12,'#FFD3A8','#F08A3C','#A3501A');
+}
+function drawKid(c,x,b,ph,shirt){
+  const s=Math.sin(ph)*15,pants='#2F4A6E',skin='#E9B98F';
+  oval(c,x,b+2,26,5,'rgba(0,0,0,.22)');
+  sline(c,[[x-3,b-48],[x-3+s,b-4]],'#26405F',11);sline(c,[[x+3,b-48],[x+3-s,b-4]],pants,11);
+  oval(c,x-1+s,b-2,9,4.5,'#222');oval(c,x+7-s,b-2,9,4.5,'#2A2A2A');
+  sline(c,[[x+9,b-90],[x+18+s*.6,b-58]],shirt,9);dot(c,x+18+s*.6,b-56,4.5,skin);
+  c.beginPath();if(c.roundRect)c.roundRect(x-15,b-98,30,54,9);else c.rect(x-15,b-98,30,54);c.fillStyle=shirt;c.fill();
+  c.fillStyle=lin(c,x-15,0,x+15,0,[[0,'rgba(255,255,255,.12)'],[1,'rgba(0,0,0,.28)']]);c.fill();
+  sline(c,[[x-9,b-90],[x-18-s*.6,b-58]],shirt,9);dot(c,x-18-s*.6,b-56,4.5,skin);
+  fr(c,x-4,b-104,8,8,skin);
+  dot(c,x,b-114,15,radg(c,x,b-114,15,[[0,'#F6D2B2'],[1,'#C98F62']],x-4,b-118));
+  c.beginPath();c.ellipse(x-1,b-121,15.5,9,0,Math.PI,0);c.fillStyle='#3A2516';c.fill();
+}
+function drawCat(c,x,b,ph){
+  const s=Math.sin(ph)*8,fur=(xx,yy,r)=>radg(c,xx,yy,r,[[0,'#F9C07A'],[.7,'#E08A35'],[1,'#B4631F']],xx-r*.3,yy-r*.5);
+  oval(c,x,b+1,44,5,'rgba(0,0,0,.22)');
+  [[-26,s],[-14,-s],[18,-s],[30,s]].forEach(([dx,sw])=>sline(c,[[x+dx,b-20],[x+dx+sw,b-2]],'#C9762C',7));
+  c.strokeStyle='#D27F31';c.lineWidth=8;c.lineCap='round';c.beginPath();c.moveTo(x-38,b-30);c.quadraticCurveTo(x-66,b-40,x-60,b-72);c.stroke();
+  c.beginPath();c.ellipse(x,b-30,42,17,0,0,Math.PI*2);c.fillStyle=fur(x,b-30,44);c.fill();
+  c.strokeStyle='rgba(140,70,20,.5)';c.lineWidth=3;for(let i=-2;i<=2;i++){c.beginPath();c.moveTo(x+i*12-4,b-46);c.quadraticCurveTo(x+i*12,b-34,x+i*12+2,b-22);c.stroke()}
+  fp(c,[[x+33,b-52],[x+36,b-72],[x+46,b-57]],'#D27F31');fp(c,[[x+48,b-57],[x+58,b-72],[x+58,b-50]],'#D27F31');
+  dot(c,x+46,b-44,16,fur(x+46,b-44,16));
+  dot(c,x+52,b-47,2,'#2B3A1E');dot(c,x+41,b-47,2,'#2B3A1E');fp(c,[[x+55,b-41],[x+59,b-41],[x+57,b-38]],'#C9606A');
+}
+const SCENES={
+  sunny:{name:'Sunny backyard',light:1,lightName:'bright sun',draw:sceneSunny,cy:300,
+    mover:{v:70,y:505,x0:80,draw:(c,x,b,ph)=>drawKid(c,x,b,ph,'#C8414F'),who:'kid walking by'}},
+  cloudy:{name:'Cloudy park',light:4,lightName:'cloudy light (2 stops darker)',draw:sceneCloudy,cy:300,
+    mover:{v:55,y:540,x0:200,draw:(c,x,b,ph)=>drawKid(c,x,b,ph,'#E8B93A'),who:'person in the raincoat'}},
+  indoor:{name:'Indoors by a window',light:64,lightName:'indoor light (6 stops darker)',draw:sceneIndoor,cy:330,
+    mover:{v:40,y:560,x0:150,draw:drawCat,who:'cat'}}
+};
+const bgCache={};
+function getBg(k){if(!bgCache[k]){const c=mk(W,H);SCENES[k].draw(c.getContext('2d'));bgCache[k]=c}return bgCache[k]}
+function moverX(m,t){const span=W+220;return(((m.x0+m.v*t)%span)+span)%span-110}
+
+/* ================= SHOOT: physics ================= */
+const S={scene:'sunny',d:0.4,depth:100,speed:10,open:false,expT:0,tOpen:0,sceneT:0,busy:false};
+const idealD=f=>1.9*Math.sqrt(f*LAMBDA);
+const fnum=(f,d)=>f/d;
+const tNeeded=(f,d,scene)=>Math.pow(fnum(f,d)/16,2)/ISO*SCENES[scene].light;
+const blurMM=(d,f)=>Math.sqrt(d*d+Math.pow(2.44*LAMBDA*f/d,2));
+function cropFor(f,scene){
+  const cw=Math.min(750,750*60/f),ch=cw*.8;
+  const cx=Math.min(W-cw/2,Math.max(cw/2,500)),cy=Math.min(H-ch/2,Math.max(ch/2,SCENES[scene].cy));
+  return{cw,ch,cx,cy};
+}
+function fmt(t){if(t<60)return t.toFixed(t<10?1:0)+' s';const m=Math.floor(t/60),s=Math.round(t%60);return s===60?`${m+1} min`:`${m} min ${s} s`}
+
+function updateGuide(){
+  const N=fnum(S.depth,S.d),best=idealD(S.depth),t=tNeeded(S.depth,S.d,S.scene);
+  $('#dOut').textContent=S.d.toFixed(2)+' mm';$('#fOut').textContent=S.depth+' mm';
+  $('#guide').innerHTML=`<p><b>Light meter</b></p>
+  <p>Your camera is about f/${Math.round(N)} (box depth ÷ hole size). Bigger number, less light.</p>
+  <p>Best pinhole for a ${S.depth} mm box: <b>${best.toFixed(2)} mm</b></p>
+  <p>Suggested exposure in ${SCENES[S.scene].lightName}: <b>${fmt(t)}</b>${S.speed>1?` (about ${fmt(t/S.speed)} on the ${S.speed}× clock)`:''}</p>`;
+}
+$('#dIn').oninput=e=>{S.d=+e.target.value;S.touched=true;updateGuide()};
+$('#fIn').oninput=e=>{S.depth=+e.target.value;S.touched=true;updateGuide()};
+function applyCam(){
+  const cam=store.get('pinhole-cam',null),n=$('#notBuilt');n.hidden=false;
+  if(!cam){n.classList.remove('ready');n.innerHTML='Your camera isn’t built yet. <a href="#build">Build it first</a>, or go ahead and borrow ours.';return}
+  if(!S.touched){S.depth=Math.min(200,Math.max(60,cam.depth));S.d=Math.max(.1,Math.min(2,Math.round(cam.d/.05)*.05));$('#dIn').value=S.d;$('#fIn').value=S.depth;updateGuide()}
+  n.classList.add('ready');n.innerHTML=`Loaded with the camera you built: ${cam.name}, ${cam.depth} mm deep, ${cam.d.toFixed(2)} mm pinhole. Move the sliders to experiment.`;
+}
+$$('input[name=scene]').forEach(r=>r.onchange=()=>{S.scene=r.value;updateGuide()});
+$$('input[name=speed]').forEach(r=>r.onchange=()=>{S.speed=+r.value;updateGuide()});
+
+/* ================= SHOOT: live view ================= */
+const wc=$('#world'),wx=wc.getContext('2d');
+let raf=0,last=0;
+function drawWorld(){
+  wx.drawImage(getBg(S.scene),0,0);
+  const m=SCENES[S.scene].mover;m.draw(wx,moverX(m,S.sceneT),m.y,S.sceneT*8);
+  const {cw,ch,cx,cy}=cropFor(S.depth,S.scene),x0=cx-cw/2,y0=cy-ch/2;
+  wx.save();wx.fillStyle='rgba(10,12,20,.38)';wx.beginPath();wx.rect(0,0,W,H);wx.rect(x0,y0,cw,ch);wx.fill('evenodd');
+  wx.strokeStyle=S.open?'#FF5A64':'#FFFFFF';wx.lineWidth=5;wx.lineCap='square';const L=Math.min(44,cw/5);
+  [[x0,y0,1,1],[x0+cw,y0,-1,1],[x0,y0+ch,1,-1],[x0+cw,y0+ch,-1,-1]].forEach(([x,y,sx,sy])=>{wx.beginPath();wx.moveTo(x+sx*L,y);wx.lineTo(x,y);wx.lineTo(x,y+sy*L);wx.stroke()});
+  wx.font='24px "Patrick Hand","Comic Sans MS",cursive';
+  const label=S.open?'exposing…':'what lands on your paper',tw=wx.measureText(label).width,ly=Math.max(4,y0-40);
+  wx.fillStyle='rgba(10,12,20,.65)';wx.fillRect(x0,ly,tw+(S.open?38:18),32);
+  if(S.open)dot(wx,x0+16,ly+16,7,'#FF5A64');
+  wx.fillStyle='#FFFFFF';wx.fillText(label,x0+(S.open?30:9),ly+23);
+  wx.restore();
+}
+function frame(ts){
+  const dt=last?Math.min(.1,(ts-last)/1000):0; last=ts;
+  S.sceneT+=dt*(S.open?S.speed:1);
+  if(S.open){S.expT+=dt*S.speed;$('#watch').textContent=fmt(S.expT)}
+  drawWorld(); raf=requestAnimationFrame(frame);
+}
+function startLoop(){if(!raf){last=0;raf=requestAnimationFrame(frame)}}
+function stopLoop(){if(raf){cancelAnimationFrame(raf);raf=0}if(S.open)toggleShutter()}
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{if(!raf&&$('#v-shoot').classList.contains('on'))drawWorld()});
+
+function toggleShutter(){
+  if(S.busy)return;
+  if(!S.open){
+    S.open=true;S.expT=0;S.tOpen=S.sceneT;$('#watch').textContent='0.0 s';
+    $('#shutterBtn').textContent='Close the shutter';$('#mini').classList.add('open');
+    $$('#sceneChips input,#dIn,#fIn').forEach(i=>i.disabled=true);
+  } else {
+    S.open=false;$('#mini').classList.remove('open');$('#shutterBtn').textContent='Open the shutter';
+    $$('#sceneChips input,#dIn,#fIn').forEach(i=>i.disabled=false);
+    develop({scene:S.scene,d:S.d,depth:S.depth,t:S.expT,tOpen:S.tOpen,tClose:S.sceneT});
+  }
+}
+$('#shutterBtn').onclick=toggleShutter;
+
+/* ================= SHOOT: making the photo ================= */
+const FILTER_OK=(()=>{try{const t=mk(2,2).getContext('2d');t.filter='blur(2px)';return t.filter==='blur(2px)'}catch(e){return false}})();
+function rot180(src){const c=mk(src.width,src.height),x=c.getContext('2d');x.translate(c.width,c.height);x.rotate(Math.PI);x.drawImage(src,0,0);return c}
+function makePhoto(sh){
+  const sc=SCENES[sh.scene],m=sc.mover;
+  const Sc=mk(W,H),s=Sc.getContext('2d');s.drawImage(getBg(sh.scene),0,0);
+  const dist=Math.abs(m.v*(sh.tClose-sh.tOpen)),n=Math.max(1,Math.min(90,Math.round(dist/5)+1));
+  const sprite=mk(W,H),sp=sprite.getContext('2d');
+  for(let i=0;i<n;i++){
+    const t=n===1?sh.tOpen:sh.tOpen+(sh.tClose-sh.tOpen)*i/(n-1);
+    sp.clearRect(0,0,W,H);seed(5);m.draw(sp,moverX(m,t),m.y,t*8);
+    s.globalAlpha=Math.min(1,2.2/n);s.drawImage(sprite,0,0);
+  }
+  s.globalAlpha=1;
+  const {cw,ch,cx,cy}=cropFor(sh.depth,sh.scene),k=OW/cw;
+  const O=mk(OW,OH),o=O.getContext('2d');
+  const bpx=blurMM(sh.d,sh.depth)*(OW/100),sigma=bpx/2.4;
+  if(FILTER_OK&&sigma>.3){
+    const mg=Math.ceil(sigma*3);
+    o.filter=`blur(${sigma.toFixed(2)}px)`;
+    o.drawImage(Sc,cx-cw/2-mg/k,cy-ch/2-mg/k,cw+2*mg/k,ch+2*mg/k,-mg,-mg,OW+2*mg,OH+2*mg);
+    o.filter='none';
+  } else {
+    o.drawImage(Sc,cx-cw/2,cy-ch/2,cw,ch,0,0,OW,OH);
+    if(sigma>.6){const f=Math.max(1,sigma*1.6),T=mk(Math.max(8,Math.round(OW/f)),Math.max(8,Math.round(OH/f))),t=T.getContext('2d');
+      t.imageSmoothingQuality='high';t.drawImage(O,0,0,T.width,T.height);o.clearRect(0,0,OW,OH);o.imageSmoothingQuality='high';o.drawImage(T,0,0,OW,OH)}
+  }
+  const src=o.getImageData(0,0,OW,OH).data;
+  const P=mk(OW,OH),Ng=mk(OW,OH),pi=P.getContext('2d').createImageData(OW,OH),ni=Ng.getContext('2d').createImageData(OW,OH);
+  const mult=Math.pow(2,sh.stops),norm=1-Math.exp(-2.4),dep2=sh.depth*sh.depth;
+  for(let y=0;y<OH;y++){
+    const ry=(y-OH/2)/5;
+    for(let x=0;x<OW;x++){
+      const i=(y*OW+x)*4,rx=(x-OW/2)/5,v=Math.pow(dep2/(dep2+rx*rx+ry*ry),2);
+      const L=(.3*src[i]+.59*src[i+1]+.11*src[i+2])/255;
+      const E=Math.pow(L,1.5)*v*mult;
+      let p=(1-Math.exp(-2.4*E))/norm;p+= (Math.random()-.5)*.07;p=Math.max(0,Math.min(1,p));
+      pi.data[i]=18+p*232;pi.data[i+1]=16+p*228;pi.data[i+2]=14+p*214;pi.data[i+3]=255;
+      const q=1-.93*p;ni.data[i]=252*q;ni.data[i+1]=249*q;ni.data[i+2]=242*q;ni.data[i+3]=255;
+    }
+  }
+  P.getContext('2d').putImageData(pi,0,0);Ng.getContext('2d').putImageData(ni,0,0);
+  return{neg:rot180(Ng),posRot:rot180(P),posUp:P};
+}
+function verdictFor(sh){
+  const out=[],ratio=sh.d/idealD(sh.depth),m=SCENES[sh.scene].mover;
+  if(sh.t<.3)out.push(['no','The shutter barely opened, so almost no light reached the paper.']);
+  else if(sh.stops<-1.5)out.push(['no',`Way too dark. Leave the shutter open about ${Math.round(Math.pow(2,-sh.stops))}× longer.`]);
+  else if(sh.stops<-.5)out.push(['hm','A bit dark. Try leaving the shutter open a little longer.']);
+  else if(sh.stops>1.5)out.push(['no',`Washed out. Too much light. Close the shutter about ${Math.round(Math.pow(2,sh.stops))}× sooner.`]);
+  else if(sh.stops>.5)out.push(['hm','A little bright. Close the shutter a bit sooner.']);
+  else out.push(['ok','Exposure: just right!']);
+  if(ratio>1.6)out.push(['no','Blurry: the pinhole is big for this box. Try a smaller hole or a longer box.']);
+  else if(ratio<.6)out.push(['hm','Soft: a hole this tiny makes the light spread out (diffraction). Try a slightly bigger one.']);
+  else out.push(['ok','Sharp, for a pinhole! The hole is close to the best size for this box.']);
+  if(sh.t>3&&sh.t>=.3)out.push(['hm',`Where’s the ${m.who}? Things that move during a long exposure smear out or vanish. That happened in the earliest street photos too.`]);
+  if(sh.depth<=75&&sh.t>=.3)out.push(['hm','See the dark corners? A short box makes light reach the corners at a steep angle, so they get less of it.']);
+  return out;
+}
+const pc=$('#printC'),px=pc.getContext('2d');
+function blankPaper(){px.fillStyle='#FCF9F2';px.fillRect(0,0,OW,OH)}
+blankPaper();
+let shots=null,cur=null;
+function setDev(i){$$('#devsteps span').forEach((s,j)=>s.classList.toggle('on',j===i))}
+function develop(sh){
+  S.busy=true;$('#shutterBtn').disabled=true;
+  sh.tNeed=tNeeded(sh.depth,sh.d,sh.scene);sh.stops=Math.log2(Math.max(sh.t,1e-4)/sh.tNeed);
+  cur=sh;shots=makePhoto(sh);
+  pc.classList.add('noanim');pc.classList.remove('spin');
+  $('#devBtns').hidden=true;$('#verdict').innerHTML='';blankPaper();
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const stage=(i,msg,ms)=>new Promise(r=>{setDev(i);$('#devMsg').textContent=msg;setTimeout(r,reduce?150:ms)});
+  stage(0,'Developer: the picture slowly appears…',0).then(()=>new Promise(r=>{
+    const t0=performance.now(),dur=reduce?10:1600;
+    (function f(now){const a=Math.min(1,(now-t0)/dur);blankPaper();px.globalAlpha=a;px.drawImage(shots.neg,0,0);px.globalAlpha=1;a<1?requestAnimationFrame(f):r()})(t0);
+  })).then(()=>stage(1,'Stop bath: freezes the developing so it doesn’t keep darkening.',900))
+    .then(()=>stage(2,'Fixer: makes the paper safe to see in normal light.',900))
+    .then(()=>{
+      setDev(-1);
+      $('#devMsg').textContent='Here’s your paper negative. It’s upside down, and light and dark are swapped: the bright sky came out dark.';
+      $('#devBtns').hidden=false;$('#toPos').disabled=false;$('#flipBtn').disabled=true;
+      $('#verdict').innerHTML=verdictFor(sh).map(([k,t])=>`<p class="${k}">${t}</p>`).join('');
+      saveShot(sh);S.busy=false;$('#shutterBtn').disabled=false;
+    });
+}
+$('#toPos').onclick=()=>{px.drawImage(shots.posRot,0,0);$('#devMsg').textContent='Flipped light and dark to make a positive (scanning and inverting does this). Still upside down, though.';$('#toPos').disabled=true;$('#flipBtn').disabled=false};
+$('#flipBtn').onclick=()=>{
+  $('#flipBtn').disabled=true;
+  const done=()=>{pc.classList.add('noanim');pc.classList.remove('spin');px.drawImage(shots.posUp,0,0);void pc.offsetWidth;pc.classList.remove('noanim');
+    $('#devMsg').textContent='Right side up! This is how the scene really looked, in black and white.'};
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches){done();return}
+  pc.classList.remove('noanim');void pc.offsetWidth;pc.classList.add('spin');
+  pc.addEventListener('transitionend',done,{once:true});
+};
+
+/* ================= GALLERY ================= */
+let gallery=store.get('pinhole-gallery',[]);
+function saveShot(sh){
+  const t=mk(250,200);t.getContext('2d').drawImage(shots.posUp,0,0,250,200);
+  const v=verdictFor(sh)[0];
+  gallery.unshift({img:t.toDataURL('image/jpeg',.8),cap:`${SCENES[sh.scene].name}: ${sh.d.toFixed(2)} mm hole, ${sh.depth} mm box, ${fmt(sh.t)}`,note:v[1]});
+  gallery=gallery.slice(0,9);
+  if(!store.set('pinhole-gallery',gallery)){gallery=gallery.slice(0,4);store.set('pinhole-gallery',gallery)}
+  renderGallery();
+}
+function renderGallery(){
+  const g=$('#gallery');
+  if(!gallery.length){g.innerHTML='<p class="empty">No photos yet. Open the shutter to take your first one.</p>';$('#clearGal').hidden=true;return}
+  $('#clearGal').hidden=false;
+  g.innerHTML=gallery.map(p=>`<figure><img src="${p.img}" alt="Pinhole photo: ${p.cap}"><figcaption><b>${p.cap}</b><br>${p.note}</figcaption></figure>`).join('');
+}
+$('#clearGal').onclick=()=>{gallery=[];store.set('pinhole-gallery',[]);renderGallery()};
+renderGallery();updateGuide();
+
+/* ================= HISTORY ================= */
+const HIST=[
+  ['Around 400 BCE','Mozi’s upside-down shadows','In ancient China, the philosopher Mozi and his followers described light passing through a small hole into a dark room and forming an upside-down image. They explained it with light traveling in straight lines.'],
+  ['Around 330 BCE','Crescents under the trees','Writings from Aristotle’s school ask why sunlight through gaps in leaves makes round spots, and crescent-shaped ones during a partial eclipse. Every gap between leaves is a tiny pinhole.'],
+  ['Around 1020','Ibn al-Haytham’s experiments','In his Book of Optics, the scientist Ibn al-Haytham (Alhazen) studied images made through small holes. Using several candles, he showed each flame makes its own separate image, proof that light travels in straight lines.'],
+  ['1490s','Leonardo’s notebooks','Leonardo da Vinci described the camera obscura in detail and compared it to the way the human eye works.'],
+  ['1544','Watching an eclipse safely','Astronomer Gemma Frisius published a drawing of a room-sized camera obscura used to watch a solar eclipse. It’s still a safe way to view one today.'],
+  ['1600s','A name and a drawing tool','Johannes Kepler helped popularize the name “camera obscura.” Portable boxes with lenses became tools for artists, who traced the projected image.'],
+  ['1826–27','The picture finally sticks','Nicéphore Niépce made the oldest surviving camera photograph: the view from his window in France. The exposure took many hours, maybe even days.'],
+  ['1838','The first person in a photo','Louis Daguerre photographed a busy Paris street. The exposure lasted minutes, so moving people and carriages vanished. Only a man standing still to get his boots shined showed up.'],
+  ['1850s','The pinhole gets its name','Scottish scientist Sir David Brewster was one of the first to take photographs with just a hole and no lens, and he wrote about “pin-hole” cameras.'],
+  ['1890s','Pinhole cameras for sale','Ready-made pinhole cameras were sold to the public, and some artistic photographers loved their soft, dreamy look.'],
+  ['2001','Worldwide Pinhole Photography Day','Every year on the last Sunday in April, people around the world make pinhole photographs and share them online.'],
+  ['Today','From soda cans to telescopes','Some photographers leave a soda-can pinhole camera outdoors for months to record the sun’s path across the sky. Scientists use masks with many pinholes to make images of X-rays and gamma rays, which ordinary lenses can’t bend.']
+];
+const HC=['var(--pink)','var(--orange)','var(--yellow)','var(--green)','var(--blue)','var(--purple)'];
+$('#timeline').innerHTML=HIST.map(([y,t,p],i)=>`<li style="--c:${HC[i%HC.length]}"><span class="yr">${y}</span><h3>${t}</h3><p>${p}</p></li>`).join('');
+
+bRender();
+route();
+</script>
+</body>
+</html>
