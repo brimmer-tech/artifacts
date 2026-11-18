@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Rhythm Cube</title>
+<script>(function(){var h=location.hash.replace('#',''),t=window.matchMedia&&matchMedia('(hover: none) and (pointer: coarse)').matches;document.documentElement.dataset.view=(h==='simple'||(h!=='full'&&t))?'simple':'full';})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
@@ -160,6 +161,41 @@ summary{cursor:pointer;font-weight:700}
 details p{margin:.6em 0 0;max-width:62ch;color:var(--ink-soft);font-size:.95rem}
 .credit{margin:18px 0 0;font-size:.82rem;color:var(--ink-soft)}
 @media (prefers-reduced-motion:reduce){.face,.cap{transition:none}.tile.on .face{animation:none}.tile.hit .cap{transform:none}}
+button:disabled{opacity:.45;cursor:default}
+.feel{display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px}
+.seg{display:flex;align-items:center;gap:6px;font-weight:600}
+.seg button,.pages button{padding:.3em .8em}
+.feel .tempo{min-width:200px}
+.tempo input{min-width:0;width:70px}
+@media (max-width:520px){.turns{grid-template-columns:1fr}}
+.kit{display:flex;align-items:center;gap:8px;font-weight:600}
+.kit select{padding:.3em .5em}
+.grid-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px;margin-bottom:8px}
+.grid-head .section-title{margin:0}
+.pages{display:flex;gap:6px}
+.pages button{font-size:.88rem}
+.pages button.playing{box-shadow:0 0 0 2px var(--stop)}
+.mix-rows{display:grid;gap:6px;margin-top:10px}
+.mix-row{display:flex;align-items:center;gap:8px;font-size:.9rem;font-weight:600}
+.mix-row span{width:7.4rem;flex:none}
+.mix-row input{flex:1;min-width:0;accent-color:var(--stop)}
+.share-row{margin-top:12px;flex-wrap:wrap}
+.share-row input{min-width:150px}
+.tut-idle-btns{display:flex;flex-wrap:wrap;gap:8px}
+.turn.slice{grid-column:1 / -1}
+.turn.slice span{font-size:.84rem}
+/* simple view (phones and tablets): the cube, Play/Stop and Tempo, nothing else */
+[data-view="simple"] .tut,
+[data-view="simple"] .panel > :not(.transport){display:none!important}
+[data-view="simple"] #shuffle{display:none}
+[data-view="simple"] main{display:block}
+[data-view="simple"] .stage{height:clamp(320px,60vh,680px)}
+[data-view="simple"] .panel{margin-top:16px;padding:14px 16px;gap:0}
+[data-view="simple"] .transport{flex-wrap:nowrap;gap:14px}
+[data-view="simple"] .tempo{min-width:0}
+[data-view="simple"] .tempo input{height:32px}
+[data-view="simple"] #play{min-width:6rem;padding:.8em 1.2em;font-size:1.15rem}
+[data-view="simple"] .credit{margin-top:12px}
 </style>
 </head>
 <body>
@@ -169,16 +205,19 @@ details p{margin:.6em 0 0;max-width:62ch;color:var(--ink-soft);font-size:.95rem}
     <p class="sub">A drum machine you can scramble. Light up squares to build a beat, then twist the faces and hear it rearrange.</p>
   </header>
   <main>
-    <section class="stage" id="stage" aria-label="Rhythm cube. Drag to look around, tap squares to turn steps on or off.">
+    <section class="stage" id="stage" aria-label="Rhythm cube. Tap squares to turn steps on or off, swipe a square to twist its face, drag the background to look around.">
       <div class="shadow"></div>
       <div class="scene" id="scene"><div class="cube" id="cube"></div></div>
-      <p class="hint">Drag to look around · tap a square to light it</p>
+      <p class="hint">Tap to light · swipe a square to twist · drag the background to spin</p>
     </section>
 
-    <section class="tut" id="tut" aria-label="Tutorial">
+    <section class="tut" id="tut" aria-label="Tutorial and challenges">
       <div class="tut-idle" id="tutIdle">
-        <p id="tutIdleText">New here? Learn the cube in ten short steps.</p>
-        <button id="tutStart" type="button">Start the tutorial</button>
+        <p id="tutIdleText">New here? Learn the cube in ten short steps, then test yourself.</p>
+        <div class="tut-idle-btns">
+          <button id="tutStart" type="button">Start the tutorial</button>
+          <button id="chStart" type="button">Try the challenges</button>
+        </div>
       </div>
       <div class="tut-run" id="tutRun" hidden>
         <div class="tut-bar" id="tutBar" aria-hidden="true"></div>
@@ -192,6 +231,17 @@ details p{margin:.6em 0 0;max-width:62ch;color:var(--ink-soft);font-size:.95rem}
           <button id="tutEnd" type="button">End tutorial</button>
         </div>
       </div>
+      <div class="tut-run" id="chRun" hidden>
+        <p class="tut-count" id="chCount"></p>
+        <h2 id="chTitle"></h2>
+        <p id="chBody"></p>
+        <p class="tut-done" id="chDone" role="status"></p>
+        <div class="tut-nav">
+          <button id="chHear" type="button">Hear the target</button>
+          <button id="chNext" type="button">Skip</button>
+          <button id="chEnd" type="button">End challenges</button>
+        </div>
+      </div>
     </section>
 
     <section class="panel">
@@ -201,13 +251,36 @@ details p{margin:.6em 0 0;max-width:62ch;color:var(--ink-soft);font-size:.95rem}
         <button id="shuffle" class="toggle" type="button" aria-pressed="false">Shuffle</button>
       </div>
 
-      <div>
-        <h2 class="section-title">The beat right now</h2>
-        <div class="readout" id="readout"></div>
+      <div class="feel">
+        <div class="seg" role="group" aria-label="Steps per bar">
+          <span>Steps</span>
+          <button id="steps8" class="toggle" type="button" aria-pressed="true">8</button>
+          <button id="steps16" class="toggle" type="button" aria-pressed="false">16</button>
+        </div>
+        <label class="tempo">Swing <input id="swing" type="range" min="0" max="100" value="0"><output id="swingOut">0</output></label>
+        <label class="kit">Kit
+          <select id="kit"><option value="0">Electro</option><option value="1">Dusty</option></select>
+        </label>
       </div>
 
       <div>
-        <h2 class="section-title">Turn a face</h2>
+        <div class="grid-head">
+          <h2 class="section-title">The beat right now</h2>
+          <div class="pages" id="pages" role="group" aria-label="Which half of the bar to show" hidden>
+            <button id="pageA" class="toggle" type="button" aria-pressed="true">Steps 1–8</button>
+            <button id="pageB" class="toggle" type="button" aria-pressed="false">Steps 9–16</button>
+          </div>
+        </div>
+        <div class="readout" id="readout"></div>
+      </div>
+
+      <details class="mix">
+        <summary>Drum volumes</summary>
+        <div class="mix-rows" id="mix"></div>
+      </details>
+
+      <div>
+        <h2 class="section-title">Twist the cube</h2>
         <div class="turns" id="turns"></div>
       </div>
 
@@ -221,6 +294,7 @@ details p{margin:.6em 0 0;max-width:62ch;color:var(--ink-soft);font-size:.95rem}
           <option value="house">House party</option>
           <option value="drill">Drill</option>
         </select>
+        <button id="undo" type="button" disabled>Undo</button>
         <button id="scramble" type="button">Scramble</button>
         <button id="solve" type="button">Solve</button>
         <button id="clear" type="button">Clear all</button>
@@ -236,14 +310,21 @@ details p{margin:.6em 0 0;max-width:62ch;color:var(--ink-soft);font-size:.95rem}
         </div>
         <ul class="saved" id="saved"></ul>
         <p class="save-note" id="saveNote" role="status"></p>
+        <div class="save-row share-row">
+          <button id="shareGet" type="button">Get a share code</button>
+          <input id="shareIn" type="text" placeholder="Or paste a share code" aria-label="Share code" autocomplete="off" spellcheck="false">
+          <button id="shareLoad" type="button">Load code</button>
+        </div>
+        <p class="save-note" id="shareNote" role="status"></p>
       </div>
 
       <details>
         <summary>How it works</summary>
         <p>Each face of the cube is one drum. The eight squares around the edge are eight steps, played clockwise starting from the top-left corner. The center square names the drum; tap it to mute or unmute that drum. In the grid, tap a drum’s name to hear it, M to mute it, or S to hear it on its own.</p>
-        <p>Turning a face carries lit squares onto neighboring faces, so they land on a different drum and a different step, and take on that drum’s color. That’s the whole idea: the puzzle cube becomes a source of musical randomness, like the dice games composers once used to write music by chance.</p>
-        <p>Shuffle turns a random face at the end of every bar. Solve puts every square back where it started, and your original beat comes back with it.</p>
-        <p>Keyboard: press U, D, L, R, F or B to turn a face clockwise, add Shift to turn it the other way, and press Space to start or stop.</p>
+        <p>Turning a face carries lit squares onto neighboring faces, so they land on a different drum and a different step, and take on that drum’s color. Swipe any square on the cube to twist a face or a middle slice, or use the arrow buttons. A middle slice carries lit squares across four faces and takes the center drum labels with it. A label brings its sound, color, mute, solo and volume to its new face, so a face always plays the drum whose label is on it. That’s the whole idea: the puzzle cube becomes a source of musical randomness, like the dice games composers once used to write music by chance.</p>
+        <p>With Steps set to 16, the bar has sixteen faster steps. The cube and grid show half the bar at a time; switch halves with the “Steps 1–8” and “Steps 9–16” buttons. Swing delays every other step for a looser feel.</p>
+        <p>Shuffle turns a random face or middle slice near the end of every bar. Solve puts every square back where it started, and your original beat comes back with it. Undo steps back through your last changes.</p>
+        <p>Keyboard: press U, D, L, R, F or B to turn a face clockwise, M, E or S for a middle slice (M sits between L and R, E between U and D, S between F and B), add Shift to turn the other way, press Space to start or stop, and Ctrl or Command with Z to undo.</p>
       </details>
     </section>
   </main>
@@ -252,13 +333,14 @@ details p{margin:.6em 0 0;max-width:62ch;color:var(--ink-soft);font-size:.95rem}
 
 <script>
 (() => {
+const $ = id => document.getElementById(id);
 const FACES = [
-  { key:'F', n:[0,0,1],  name:'Bass Drum', short:'BD', color:'#3f9a5d' },
-  { key:'R', n:[1,0,0],  name:'Snare',     short:'SD', color:'#d23a2c' },
-  { key:'U', n:[0,1,0],  name:'Closed Hi-Hat',    short:'HH', color:'#ece6d6' },
-  { key:'L', n:[-1,0,0], name:'Open Hi-Hat',     short:'CG', color:'#ee8020' },
-  { key:'B', n:[0,0,-1], name:'Hand Clap',    short:'CY', color:'#2f6db3' },
-  { key:'D', n:[0,-1,0], name:'Low Tom',   short:'CB', color:'#f0c232' },
+  { key:'F', n:[0,0,1],  name:'Bass Drum',     color:'#3f9a5d' },
+  { key:'R', n:[1,0,0],  name:'Snare',         color:'#d23a2c' },
+  { key:'U', n:[0,1,0],  name:'Closed Hi-Hat', color:'#ece6d6' },
+  { key:'L', n:[-1,0,0], name:'Open Hi-Hat',   color:'#ee8020' },
+  { key:'B', n:[0,0,-1], name:'Hand Clap',     color:'#2f6db3' },
+  { key:'D', n:[0,-1,0], name:'Low Tom',       color:'#f0c232' },
 ];
 // local 3x3 index (row*3+col) -> step; edge squares clockwise from top-left, center = -1
 const STEP_OF = {0:0,1:1,2:2,5:3,8:4,7:5,6:6,3:7,4:-1};
@@ -283,33 +365,69 @@ function rot(v, a, s){ // quarter turn by s (+1/-1) about model axis a, right-ha
   if(a===1) return [z*s+0, y, -x*s+0];
   return [-y*s+0, x*s+0, z];
 }
+const same = (a,b) => a[0]===b[0] && a[1]===b[1] && a[2]===b[2];
+const SL=[1,1,-1]; // direction of a middle-slice "clockwise" turn about x, y, z (it follows the L, D and F faces)
 
-// ---------- model ----------
+// ---------- state ----------
+let bpm=120, swing=0, steps16=false, page=0, kit=0;
+const vol = [80,80,80,80,80,80];
+const muted = [false,false,false,false,false,false];
+let soloFace = -1;
+const stats = { drag:0, aud:0, turns:0, ms:0, solve:0, shuffle:0, save:0, dl:0 };
+const audible = f => !muted[f] && (soloFace<0 || soloFace===f);
+
 const stickers = [];
 for(let x=-1;x<=1;x++) for(let y=-1;y<=1;y++) for(let z=-1;z<=1;z++){
   const p=[x,y,z];
   for(let a=0;a<3;a++){
     if(Math.abs(p[a])!==1) continue;
     const n=[0,0,0]; n[a]=p[a];
-    const s={ p:p.slice(), n, p0:p.slice(), n0:n.slice(), home:faceIndex(n), on:false };
+    const s={ p:p.slice(), n, p0:p.slice(), n0:n.slice(), home:faceIndex(n), on:[false,false] };
     updateLocal(s); stickers.push(s);
   }
 }
 function updateLocal(s){ s.face=faceIndex(s.n); s.idx=localIndex(s.p,s.face); s.step=STEP_OF[s.idx]; }
-const muted = [false,false,false,false,false,false];
-let soloFace = -1;
-const stats = { drag:0, aud:0, turns:0, ms:0, solve:0, shuffle:0, save:0, dl:0 };
-const audible = f => !muted[f] && (soloFace<0 || soloFace===f);
-let grid = [], centers = [];
+let grid = [], centers = [], drumOf = [0,1,2,3,4,5], faceOf = [0,1,2,3,4,5];
 function rebuildGrid(){
   grid = FACES.map(()=>new Array(8)); centers = new Array(6);
   stickers.forEach(s => { if(s.step<0) centers[s.face]=s; else grid[s.face][s.step]=s; });
+  // the center square carries the drum label: the face it sits on plays that drum
+  drumOf = centers.map(c=>c.home); faceOf = []; drumOf.forEach((d,f)=>{ faceOf[d]=f; });
 }
 rebuildGrid();
+const dg = d => grid[faceOf[d]];   // the eight steps of drum d, wherever its label is now
+// the beat as rows of 0/1, one row per drum, 8 or 16 steps long
+function pat(){ const n=steps16?16:8; return FACES.map((F,d)=>Array.from({length:n},(_,i)=>dg(d)[i&7].on[i>>3]?1:0)); }
+function setPat(P){ for(let d=0;d<6;d++) for(let k=0;k<8;k++) dg(d)[k].on=[!!P[d][k], !!P[d][k+8]]; }
+const parseRows = rows => rows.map(r=>Array.from({length:Math.max(8,r.length)},(_,i)=>r[i]==='x'?1:0));
+const samePat = (A,B) => A.length===B.length && A.every((r,f)=>r.length===B[f].length && r.every((v,i)=>v===B[f][i]));
+
+// ---------- undo ----------
+const undoStack=[];
+function snapshot(){
+  return { v:2, bpm, swing, steps16, kit, vol:vol.slice(), muted:muted.slice(),
+    s:stickers.map(s=>[s.p.map(v=>v+0), s.n.map(v=>v+0), s.on[0]?1:0, s.on[1]?1:0]) };
+}
+function pushUndo(){ undoStack.push(snapshot()); if(undoStack.length>40) undoStack.shift(); $('undo').disabled=false; }
+function applySnapshot(b){
+  if(!b || !Array.isArray(b.s) || b.s.length!==stickers.length) return false;
+  b.s.forEach((d,i)=>{ const s=stickers[i]; s.p=d[0].slice(); s.n=d[1].slice(); s.on=[!!d[2], !!d[3]]; updateLocal(s); place(s); });
+  (b.muted||[]).forEach((m,i)=>{ if(i<6) muted[i]=!!m; });
+  (b.vol||[]).forEach((v,i)=>{ if(i<6) vol[i]=Math.max(0,Math.min(100,+v||0)); });
+  if(b.bpm) bpm=Math.max(60,Math.min(180,+b.bpm||120));
+  swing=Math.max(0,Math.min(100,+b.swing||0));
+  steps16=!!b.steps16; kit=b.kit?1:0;
+  if(!steps16) page=0;
+  rebuildGrid(); step=0; syncUI();
+  return true;
+}
+function restore(b){
+  queue.length=0;
+  if(busy){ const w=setInterval(()=>{ if(!busy){ clearInterval(w); applySnapshot(b); } },30); } else applySnapshot(b);
+}
 
 // ---------- cube view ----------
-const scene = document.getElementById('scene');
-const cubeEl = document.getElementById('cube');
+const scene = $('scene'), cubeEl = $('cube'), stageEl = $('stage');
 let rx=-26, ry=-36;
 const applyView = () => { cubeEl.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`; stickers.forEach(cullOne); };
 // Hide squares that face away from the viewer so the renderer never has to sort them.
@@ -320,7 +438,6 @@ function cullOne(s){
   const z2=ny*Math.sin(ax)+z1*Math.cos(ax);
   s.el.classList.toggle('away', z2 < 0.03);
 }
-
 function stickerTransform(s){
   const [x,y,z]=s.p, n=s.n;
   const cx=x+n[0]*.5, cy=-(y+n[1]*.5), cz=z+n[2]*.5;
@@ -339,16 +456,16 @@ stickers.forEach(s => {
   if(isC){ t.classList.add('center'); s.dots=[...t.querySelectorAll('.dots i')]; }
   t._s=s; s.el=t; cubeEl.appendChild(t); place(s);
 });
-const stageEl=document.getElementById('stage');
 function pop(s){
   s.el.classList.add('hit','raised'); clearTimeout(s.ht); clearTimeout(s.rt);
   s.ht=setTimeout(()=>s.el.classList.remove('hit'),110);
   s.rt=setTimeout(()=>s.el.classList.remove('raised'),560);
 }
-function place(s){ s.el.style.transform = stickerTransform(s); s.el.style.setProperty('--c', FACES[s.face].color); cullOne(s); }
+function place(s){ s.el.style.transform = stickerTransform(s); s.el.style.setProperty('--c', FACES[drumOf[s.face]].color); cullOne(s); }
+function recolor(){ stickers.forEach(s=>s.el.style.setProperty('--c', FACES[drumOf[s.face]].color)); }
 function paint(s){
-  s.el.classList.toggle('on', s.on);
-  if(s.step<0) s.el.classList.toggle('muted', !audible(s.face));
+  s.el.classList.toggle('on', s.step>=0 && s.on[page]);
+  if(s.step<0) s.el.classList.toggle('muted', !audible(s.home));
 }
 function sizeCube(){
   const r = scene.getBoundingClientRect();
@@ -357,70 +474,126 @@ function sizeCube(){
 new ResizeObserver(sizeCube).observe(scene);
 sizeCube(); applyView();
 
-// dragging and tapping
+// ---------- pointer: tap to light, swipe a square to twist, drag the background to look around ----------
+function screenOf(v){ // model direction -> where it points on screen
+  const ax=rx*Math.PI/180, ay=ry*Math.PI/180, x=v[0], y=-v[1], z=v[2];
+  const x1=x*Math.cos(ay)+z*Math.sin(ay), z1=-x*Math.sin(ay)+z*Math.cos(ay);
+  return [x1, y*Math.cos(ax)-z1*Math.sin(ax)];
+}
+function swipeTurn(s, dx, dy){
+  const an=s.n.findIndex(v=>v!==0);
+  let best=null;
+  for(let u=0;u<3;u++){
+    if(u===an) continue;
+    const e=[0,0,0]; e[u]=1;
+    const sc=screenOf(e), len=Math.hypot(sc[0],sc[1]);
+    if(len<.15) continue;
+    const d=(dx*sc[0]+dy*sc[1])/len;
+    if(!best || Math.abs(d)>Math.abs(best.d)) best={u,d};
+  }
+  if(!best) return false;
+  const u=best.u, w=3-an-u, k=s.p[w];
+  const ew=[0,0,0]; ew[w]=1;
+  const c=[ew[1]*s.n[2]-ew[2]*s.n[1], ew[2]*s.n[0]-ew[0]*s.n[2], ew[0]*s.n[1]-ew[1]*s.n[0]]; // way the square moves under a + turn
+  const sgn=Math.sign(c[u]*Math.sign(best.d));
+  if(!sgn) return false;
+  if(k===0){ turn(6+w, sgn*SL[w]); return true; }   // a middle slice
+  const nn=[0,0,0]; nn[w]=k;
+  turn(faceIndex(nn), -sgn*k);
+  return true;
+}
 let drag=null;
 scene.addEventListener('pointerdown', e => {
-  drag={ x:e.clientX, y:e.clientY, rx, ry, moved:false, tile:e.target.closest('.tile') };
-  scene.setPointerCapture(e.pointerId);
+  drag={ x:e.clientX, y:e.clientY, rx, ry, moved:false, tile:e.target.closest('.tile'), orbit:false, twisted:false };
+  if(!drag.tile) drag.orbit=true;
+  try{ scene.setPointerCapture(e.pointerId); }catch(err){}
 });
 scene.addEventListener('pointermove', e => {
   if(!drag) return;
-  const dx=e.clientX-drag.x, dy=e.clientY-drag.y;
-  if(!drag.moved && Math.hypot(dx,dy)>6) drag.moved=true;
-  if(drag.moved){ ry=drag.ry+dx*.45; rx=Math.max(-85,Math.min(85,drag.rx-dy*.45)); applyView(); }
+  const dx=e.clientX-drag.x, dy=e.clientY-drag.y, dist=Math.hypot(dx,dy);
+  if(!drag.moved && dist>6) drag.moved=true;
+  if(!drag.moved) return;
+  if(!drag.orbit){
+    if(drag.twisted || dist<20) return;
+    if(swipeTurn(drag.tile._s, dx, dy)){ drag.twisted=true; return; }
+    drag.orbit=true; drag.x=e.clientX; drag.y=e.clientY; drag.rx=rx; drag.ry=ry; return;
+  }
+  ry=drag.ry+dx*.45; rx=Math.max(-85,Math.min(85,drag.rx-dy*.45)); applyView();
 });
-const endDrag = () => { if(drag && drag.moved) stats.drag++; if(drag && !drag.moved && drag.tile) toggleSticker(drag.tile._s); drag=null; };
+const endDrag = () => {
+  if(drag){
+    if(drag.moved && drag.orbit) stats.drag++;
+    if(!drag.moved && drag.tile) toggleSticker(drag.tile._s);
+  }
+  drag=null;
+};
 scene.addEventListener('pointerup', endDrag);
 scene.addEventListener('pointercancel', () => { drag=null; });
 
 function toggleSticker(s){
-  if(s.step<0){ stats.ms++; muted[s.face]=!muted[s.face]; paint(s); renderReadout(); return; }
-  s.on=!s.on; paint(s); renderReadout();
-  if(s.on){ stageEl.style.setProperty('--tint', FACES[s.face].color); pop(s); }
-  if(s.on && !playing && audible(s.face)){ ensureAudio(); VOICES[s.face](ctx.currentTime+.01); }
+  if(s.step<0){ stats.ms++; muted[s.home]=!muted[s.home]; paint(s); renderReadout(); return; }
+  pushUndo();
+  s.on[page]=!s.on[page]; paint(s); renderReadout();
+  if(s.on[page]){
+    const d=drumOf[s.face];
+    stageEl.style.setProperty('--tint', FACES[d].color); pop(s);   // lighting a square is silent; it sounds once Play is running
+  }
 }
-
-function audition(f){ stats.aud++; ensureAudio(); VOICES[f](ctx.currentTime+.01); pop(centers[f]); }
+function audition(d){ stats.aud++; ensureAudio(); fire(d, ctx.currentTime+.01); pop(centers[faceOf[d]]); }
 
 // ---------- turning ----------
 const queue=[]; let busy=false, lastTurn=-1;
-function turn(f, dir, dur=280){ stats.turns++; queue.push({f,dir,dur}); if(!busy) nextTurn(); }
+function turn(f, dir, dur=280, undo=true){ stats.turns++; queue.push({f,dir,dur,undo}); if(!busy) nextTurn(); }
 function nextTurn(){
   const m=queue.shift();
   if(!m){ busy=false; return; }
   busy=true; doTurn(m, nextTurn);
 }
-function doTurn({f,dir,dur}, done){
-  const n=FACES[f].n, a=n.findIndex(v=>v!==0), k=n[a], s=-dir*k;
+function doTurn({f,dir,dur,undo}, done){
+  const mid=f>=6;      // 6, 7, 8 are the middle slices about x, y, z
+  let a,k,s;
+  if(mid){ a=f-6; k=0; s=dir*SL[a]; }
+  else { const n=FACES[f].n; a=n.findIndex(v=>v!==0); k=n[a]; s=-dir*k; }
+  // a middle slice carries the four center squares (the drum labels) around with it
   const layer=stickers.filter(st=>st.p[a]===k);
   const apply=()=>{
+    if(undo) pushUndo();
     layer.forEach(st=>{ st.p=rot(st.p,a,s); st.n=rot(st.n,a,s); updateLocal(st); place(st); });
-    rebuildGrid(); renderReadout(); refreshNow(); done();
+    rebuildGrid(); repaintAll(); refreshNow(); done();
   };
   if(reduceMotion || dur===0){ apply(); return; }
   const L=document.createElement('div'); L.className='layer'; cubeEl.appendChild(L);
-  const moving=layer.filter(st=>st!==centers[f]);
+  const moving=mid ? layer : layer.filter(st=>st!==centers[f]);
   moving.forEach(st=>L.appendChild(st.el));
-  const cut=document.createElement('div'); cut.className='cut';
-  const o=[0,0,0]; o[a]=k*.5;
-  cut.style.transform=`translate3d(calc(var(--u) * ${o[0]}), calc(var(--u) * ${-o[1]}), calc(var(--u) * ${o[2]})) ${a===0?'rotateY(90deg)':a===1?'rotateX(90deg)':''}`;
-  cubeEl.appendChild(cut);
+  const extras=[];
+  const at=(i,v)=>{ const q=[0,0,0]; q[i]=v; return q; };
+  const plane=(q,axis,size)=>{
+    const d=document.createElement('div'); d.className='cut';
+    if(size){ d.style.width=`calc(var(--u) * ${size})`; d.style.height=`calc(var(--u) * ${size})`; d.style.left=`calc(var(--u) * ${-size/2})`; d.style.top=`calc(var(--u) * ${-size/2})`; }
+    d.style.transform=`translate3d(calc(var(--u) * ${q[0]}), calc(var(--u) * ${-q[1]}), calc(var(--u) * ${q[2]})) ${axis===0?'rotateY(90deg)':axis===1?'rotateX(90deg)':''}`;
+    cubeEl.appendChild(d); extras.push(d);
+  };
+  if(!mid) plane(at(a,k*.5),a);
+  else{
+    plane(at(a,-.5),a); plane(at(a,.5),a);
+    for(let i=0;i<3;i++) for(const sg of [-1,1]) plane(at(i,sg),i,2);   // a dark core, so the gap isn't see-through
+  }
   L.getBoundingClientRect();
   const ang=s*90;
   L.style.transition=`transform ${dur}ms cubic-bezier(.45,.05,.2,1)`;
   L.style.transform = a===0 ? `rotateX(${-ang}deg)` : a===1 ? `rotateY(${ang}deg)` : `rotateZ(${-ang}deg)`;
-  setTimeout(()=>{ moving.forEach(st=>cubeEl.appendChild(st.el)); L.remove(); cut.remove(); apply(); }, dur+25);
+  setTimeout(()=>{ moving.forEach(st=>cubeEl.appendChild(st.el)); L.remove(); extras.forEach(e=>e.remove()); apply(); }, dur+25);
 }
-function randomTurn(dur){
-  let f; do{ f=Math.floor(Math.random()*6); }while(f===lastTurn);
-  lastTurn=f; turn(f, Math.random()<.5?1:-1, dur);
+function randomTurn(dur, undo=true, slices=true){
+  const n=slices?9:6; let f; do{ f=Math.floor(Math.random()*n); }while(f===lastTurn);
+  lastTurn=f; turn(f, Math.random()<.5?1:-1, dur, undo);
 }
 
 // ---------- readout ----------
-const readout=document.getElementById('readout');
+const readout=$('readout');
 const cells=[], mutes=[], solos=[], nums=[];
 readout.appendChild(document.createElement('span'));
-for(let k=0;k<8;k++){ if(k===4) readout.appendChild(document.createElement('span')); const d=document.createElement('span'); d.className='num'; d.textContent=k+1; nums.push(d); readout.appendChild(d); }
+for(let k=0;k<8;k++){ if(k===4) readout.appendChild(document.createElement('span')); const d=document.createElement('span'); d.className='num'; nums.push(d); readout.appendChild(d); }
 readout.appendChild(document.createElement('span'));
 readout.appendChild(document.createElement('span'));
 FACES.forEach((F,f)=>{
@@ -432,12 +605,12 @@ FACES.forEach((F,f)=>{
   for(let k=0;k<8;k++){
     if(k===4) readout.appendChild(document.createElement('span'));
     const b=document.createElement('button'); b.type='button'; b.className='cell'+(f===2?' pale':'');
-    b.addEventListener('click',()=>toggleSticker(grid[f][k]));
+    b.addEventListener('click',()=>toggleSticker(dg(f)[k]));
     cells[f].push(b); readout.appendChild(b);
   }
   const m=document.createElement('button'); m.type='button'; m.className='mute'; m.textContent='M';
   m.setAttribute('aria-label',`Mute ${F.name}`);
-  m.addEventListener('click',()=>toggleSticker(centers[f]));
+  m.addEventListener('click',()=>toggleSticker(centers[faceOf[f]]));
   mutes.push(m); readout.appendChild(m);
   const so=document.createElement('button'); so.type='button'; so.className='mute solo'; so.textContent='S';
   so.setAttribute('aria-label',`Solo ${F.name}`);
@@ -445,37 +618,69 @@ FACES.forEach((F,f)=>{
   solos.push(so); readout.appendChild(so);
 });
 function renderReadout(){
-  FACES.forEach((F,f)=>{
+  nums.forEach((d,k)=>{ d.textContent=k+1+page*8; });
+  FACES.forEach((F,d)=>{
+    const q=faceOf[d];
     for(let k=0;k<8;k++){
-      const s=grid[f][k], b=cells[f][k];
+      const s=grid[q][k], b=cells[d][k], on=s.on[page];
       b.style.setProperty('--c', F.color);
-      b.classList.toggle('on', s.on);
-      b.setAttribute('aria-pressed', s.on);
-      b.setAttribute('aria-label', `${F.name}, step ${k+1}`);
-      const d=centers[f].dots[k]; d.classList.toggle('on', s.on); d.style.setProperty('--c', F.color);
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', on);
+      b.setAttribute('aria-label', `${F.name}, step ${k+1+page*8}`);
+      const dot=centers[q].dots[k]; dot.classList.toggle('on', on); dot.style.setProperty('--c', F.color);
     }
-    mutes[f].setAttribute('aria-pressed', muted[f]);
-    solos[f].setAttribute('aria-pressed', soloFace===f);
+    mutes[d].setAttribute('aria-pressed', muted[d]);
+    solos[d].setAttribute('aria-pressed', soloFace===d);
   });
 }
-renderReadout();
+function repaintAll(){ recolor(); labelSlices(); stickers.forEach(paint); renderReadout(); }
 
 // turn buttons
-const turnsEl=document.getElementById('turns');
+const turnsEl=$('turns');
 FACES.forEach((F,f)=>{
   const w=document.createElement('div'); w.className='turn';
   w.innerHTML=`<i class="chip" style="--c:${F.color}"></i><span>${F.name}</span>`;
   [[-1,'↺','back'],[1,'↻','clockwise']].forEach(([d,g,lbl])=>{
     const b=document.createElement('button'); b.type='button'; b.textContent=g;
     b.setAttribute('aria-label',`Turn the ${F.name} face ${lbl}`);
-    b.addEventListener('click',()=>turn(f,d)); w.appendChild(b);
+    b.addEventListener('click',()=>turn(faceOf[f],d)); w.appendChild(b);
   });
   turnsEl.appendChild(w);
 });
+const sliceRows=[];
+[[0,3,1],[1,5,2],[2,4,0]].forEach(([a,f1,f2])=>{
+  const w=document.createElement('div'); w.className='turn slice';
+  w.innerHTML='<i class="chip"></i><i class="chip"></i><span></span>';
+  const btns=[];
+  [[-1,'↺','back'],[1,'↻','clockwise']].forEach(([d,g,lbl])=>{
+    const b=document.createElement('button'); b.type='button'; b.textContent=g; b.dataset.lbl=lbl;
+    b.addEventListener('click',()=>turn(6+a,d)); w.appendChild(b); btns.push(b);
+  });
+  turnsEl.appendChild(w); sliceRows.push({w,f1,f2,btns});
+});
+// the slice rows name the two drums on the faces either side of the slice, so they change as labels move
+function labelSlices(){
+  sliceRows.forEach(r=>{
+    const A=FACES[drumOf[r.f1]], B=FACES[drumOf[r.f2]], chips=r.w.querySelectorAll('.chip');
+    chips[0].style.setProperty('--c',A.color); chips[1].style.setProperty('--c',B.color);
+    r.w.querySelector('span').textContent=`Middle: ${A.name} / ${B.name}`;
+    r.btns.forEach(bt=>bt.setAttribute('aria-label',`Turn the middle slice between ${A.name} and ${B.name} ${bt.dataset.lbl}`));
+  });
+}
+
+// volume sliders
+const volEls=[];
+FACES.forEach((F,f)=>{
+  const row=document.createElement('label'); row.className='mix-row';
+  row.innerHTML=`<i class="chip" style="--c:${F.color}"></i><span>${F.name}</span>`;
+  const r=document.createElement('input'); r.type='range'; r.min=0; r.max=100; r.value=vol[f];
+  r.setAttribute('aria-label',`${F.name} volume`);
+  r.addEventListener('input',()=>{ vol[f]=+r.value; if(bus) bus[f].gain.value=vol[f]/80; });
+  volEls.push(r); row.appendChild(r); $('mix').appendChild(row);
+});
 
 // ---------- audio ----------
-let ctx=null, master=null, noiseBuf=null;
-let silentEl=null;
+let ctx=null, master=null, noiseBuf=null, bus=null, toneF=null, silentEl=null;
 function silentWav(){
   const n=2205, b=new Uint8Array(44+n), v=new DataView(b.buffer);
   const w=(o,s)=>{ for(let i=0;i<s.length;i++) b[o+i]=s.charCodeAt(i); };
@@ -493,31 +698,42 @@ function unlockAudio(){
     if(silentEl.paused){ const p=silentEl.play(); if(p && p.catch) p.catch(()=>{}); }
   }catch(e){}
 }
+function buildGraph(c){
+  const comp=c.createDynamicsCompressor(); comp.threshold.value=-14; comp.ratio.value=4;
+  const tone=c.createBiquadFilter(); tone.type='lowpass'; tone.frequency.value=kit?5200:20000;
+  const m=c.createGain(); m.gain.value=.85; m.connect(tone); tone.connect(comp); comp.connect(c.destination);
+  const b=FACES.map((F,f)=>{ const g=c.createGain(); g.gain.value=vol[f]/80; g.connect(m); return g; });
+  const nb=c.createBuffer(1, c.sampleRate, c.sampleRate);
+  const d=nb.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+  return { master:m, bus:b, noiseBuf:nb, tone };
+}
 function ensureAudio(){
   unlockAudio();
   if(ctx){ if(ctx.state!=='running'){ const p=ctx.resume(); if(p && p.catch) p.catch(()=>{}); } return; }
   ctx=new (window.AudioContext||window.webkitAudioContext)();
   if(ctx.state!=='running'){ const p=ctx.resume(); if(p && p.catch) p.catch(()=>{}); }
-  const comp=ctx.createDynamicsCompressor(); comp.threshold.value=-14; comp.ratio.value=4;
-  master=ctx.createGain(); master.gain.value=.85; master.connect(comp); comp.connect(ctx.destination);
-  noiseBuf=ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
-  const d=noiseBuf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+  const g=buildGraph(ctx); master=g.master; bus=g.bus; noiseBuf=g.noiseBuf; toneF=g.tone;
 }
+// play drum f at time t through that drum's own volume control
+function fire(f, t){ const m=master; master=bus[f]; try{ VOICES[f](t); } finally{ master=m; } }
 function env(t, peak, decay, dest){
   const g=ctx.createGain();
   g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(peak,t+.002);
   g.gain.exponentialRampToValueAtTime(.0001,t+decay); g.connect(dest||master); return g;
 }
 function noise(t, dur){ const n=ctx.createBufferSource(); n.buffer=noiseBuf; n.start(t); n.stop(t+dur); return n; }
+function noiseHit(t, hpHz, peak, decay, dest){
+  const hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=hpHz;
+  noise(t,decay+.05).connect(hp); hp.connect(env(t,peak,decay,dest));
+}
 function kick(t){
   const o=ctx.createOscillator(); o.type='sine';
-  o.frequency.setValueAtTime(155,t); o.frequency.exponentialRampToValueAtTime(47,t+.1);
-  o.connect(env(t,1,.75)); o.start(t); o.stop(t+.8);
+  if(kit){ o.frequency.setValueAtTime(115,t); o.frequency.exponentialRampToValueAtTime(46,t+.06); o.connect(env(t,1,.34)); o.start(t); o.stop(t+.38); noiseHit(t,2500,.25,.012); }
+  else { o.frequency.setValueAtTime(140,t); o.frequency.exponentialRampToValueAtTime(40,t+.08); o.connect(env(t,1,.8)); o.start(t); o.stop(t+.85); noiseHit(t,3000,.18,.01); }
 }
 function snare(t){
-  [185,330].forEach(fq=>{ const o=ctx.createOscillator(); o.type='triangle'; o.frequency.value=fq; o.connect(env(t,.35,.12)); o.start(t); o.stop(t+.15); });
-  const hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=1800;
-  noise(t,.25).connect(hp); hp.connect(env(t,.55,.22));
+  (kit?[200,285]:[185,330]).forEach(fq=>{ const o=ctx.createOscillator(); o.type='triangle'; o.frequency.value=fq; o.connect(env(t,kit?.28:.35,kit?.09:.12)); o.start(t); o.stop(t+.15); });
+  noiseHit(t, kit?1200:1800, kit?.7:.55, kit?.16:.22);
 }
 function metal(t, decay, hpHz, peak, dest){
   const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=10000;
@@ -529,185 +745,180 @@ function metal(t, decay, hpHz, peak, dest){
 let openChoke=null;
 function hat(t){
   if(openChoke){ openChoke.gain.setValueAtTime(1,t); openChoke.gain.linearRampToValueAtTime(0,t+.015); openChoke=null; }
-  metal(t,.07,7000,.32);
+  if(kit) noiseHit(t,8000,.4,.045); else metal(t,.07,7000,.32);
 }
 function openHat(t){
   const c=ctx.createGain(); c.gain.setValueAtTime(1,t); c.connect(master); openChoke=c;
-  metal(t,.45,6500,.3,c);
+  if(kit) noiseHit(t,7000,.36,.3,c); else metal(t,.45,6500,.3,c);
 }
 function clap(t){
-  const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1150; bp.Q.value=1.2;
+  const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=kit?1000:1150; bp.Q.value=1.2;
   const hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=600;
   const g=ctx.createGain(); g.gain.setValueAtTime(.0001,t);
   [0,.011,.022].forEach(d=>{ g.gain.setValueAtTime(.7,t+d); g.gain.exponentialRampToValueAtTime(.08,t+d+.009); });
-  g.gain.setValueAtTime(.6,t+.033); g.gain.exponentialRampToValueAtTime(.0001,t+.24);
-  noise(t,.3).connect(bp); bp.connect(hp); hp.connect(g); g.connect(master);
+  g.gain.setValueAtTime(.6,t+.033); g.gain.exponentialRampToValueAtTime(.0001,t+(kit?.32:.24));
+  noise(t,.4).connect(bp); bp.connect(hp); hp.connect(g); g.connect(master);
 }
-function conga(t){
-  const o=ctx.createOscillator(); o.type='sine';
-  o.frequency.setValueAtTime(300,t); o.frequency.exponentialRampToValueAtTime(220,t+.06);
-  o.connect(env(t,.7,.3)); o.start(t); o.stop(t+.35);
-}
-function cowbell(t){
-  const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=900; bp.Q.value=.9;
-  const g=ctx.createGain();
-  g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(.55,t+.002);
-  g.gain.exponentialRampToValueAtTime(.15,t+.05); g.gain.exponentialRampToValueAtTime(.0001,t+.45);
-  bp.connect(g); g.connect(master);
-  [540,800].forEach(fq=>{ const o=ctx.createOscillator(); o.type='square'; o.frequency.value=fq; o.connect(bp); o.start(t); o.stop(t+.5); });
-}
+// The tom sits well above the bass drum, with an overtone and a stick-hit attack, so the two read as different drums.
 function lowTom(t){
-  const o=ctx.createOscillator(); o.type='sine';
-  o.frequency.setValueAtTime(150,t); o.frequency.exponentialRampToValueAtTime(82,t+.18);
-  o.connect(env(t,.9,.5)); o.start(t); o.stop(t+.55);
+  const tone=(f0,f1,sweep,peak,decay)=>{
+    const o=ctx.createOscillator(); o.type='sine';
+    o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(f1,t+sweep);
+    o.connect(env(t,peak,decay)); o.start(t); o.stop(t+decay+.05);
+  };
+  if(kit){ tone(250,165,.09,.8,.3); tone(470,340,.07,.22,.1); noiseHit(t,3000,.22,.018); }
+  else {
+    tone(235,150,.14,.8,.5); tone(430,300,.1,.28,.17);
+    const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=2200; bp.Q.value=1;
+    noise(t,.06).connect(bp); bp.connect(env(t,.3,.03));
+  }
 }
 const VOICES=[kick,snare,hat,openHat,clap,lowTom];
 ['touchend','click','keydown'].forEach(ev=>document.addEventListener(ev,()=>{ try{ ensureAudio(); }catch(e){} },{passive:true}));
 document.addEventListener('visibilitychange',()=>{ if(document.hidden && silentEl) silentEl.pause(); });
 
 // ---------- sequencer ----------
-let playing=false, shuffleOn=false, bpm=120, step=0, nextTime=0, timer=null, nowStep=-1;
+let playing=false, shuffleOn=false, step=0, nextTime=0, timer=null, nowStep=-1, nowPage=0;
 const drawQ=[];
+const stepDur = () => 60/bpm/(steps16?4:2);
+const swingDelay = i => (i&1) ? swing/100*stepDur()*.34 : 0;
 function scheduler(){
   while(nextTime < ctx.currentTime+.12){
-    for(let f=0;f<6;f++){ if(audible(f) && grid[f][step].on) VOICES[f](nextTime); }
-    drawQ.push({k:step,t:nextTime});
-    nextTime += 60/bpm/2; step=(step+1)%8;
+    const n=steps16?16:8; if(step>=n) step=0;
+    const pg=step>>3, k=step&7, t=nextTime+swingDelay(step);
+    for(let f=0;f<6;f++){ const d=drumOf[f]; if(audible(d) && grid[f][k].on[pg]) fire(d,t); }
+    drawQ.push({ k, pg, t, turn: step===n-(steps16?2:1) });
+    nextTime += stepDur(); step=(step+1)%n;
   }
   timer=setTimeout(scheduler,25);
 }
-function setNow(k, doPop=true){
+function setNow(k, pg, doPop=true){
   stickers.forEach(s=>{ s.el.classList.remove('now'); if(s.dots) s.dots.forEach(d=>d.classList.remove('now')); });
   cells.forEach(row=>row.forEach(c=>c.classList.remove('now')));
   nums.forEach(n=>n.classList.remove('on'));
-  nowStep=k;
+  $('pageA').classList.remove('playing'); $('pageB').classList.remove('playing');
+  nowStep=k; nowPage=pg;
   if(k<0) return;
+  if(steps16) $(pg?'pageB':'pageA').classList.add('playing');
+  if(pg!==page) return;
   for(let f=0;f<6;f++){
-    const s=grid[f][k]; s.el.classList.add('now'); cells[f][k].classList.add('now'); centers[f].dots[k].classList.add('now');
-    if(doPop && s.on && audible(f)) pop(s);
+    const s=grid[f][k]; s.el.classList.add('now'); cells[drumOf[f]][k].classList.add('now'); centers[f].dots[k].classList.add('now');
+    if(doPop && s.on[pg] && audible(drumOf[f])) pop(s);
   }
   nums[k].classList.add('on');
 }
-const refreshNow=()=>{ if(playing) setNow(nowStep,false); };
+const refreshNow=()=>{ if(playing) setNow(nowStep,nowPage,false); };
 function draw(){
   if(ctx && playing){
     while(drawQ.length && drawQ[0].t<=ctx.currentTime){
-      const d=drawQ.shift(); setNow(d.k);
-      if(shuffleOn && d.k===7) randomTurn(Math.min(280, 60/bpm/2*1000*.8));
+      const d=drawQ.shift(); setNow(d.k,d.pg);
+      if(shuffleOn && d.turn) randomTurn(Math.min(280, 60/bpm/2*1000*.8), false);
     }
   }
   requestAnimationFrame(draw);
 }
 requestAnimationFrame(draw);
 
-const playBtn=document.getElementById('play');
+const playBtn=$('play');
 function togglePlay(){
   ensureAudio();
   playing=!playing;
   if(playing){ step=0; nextTime=ctx.currentTime+.06; drawQ.length=0; scheduler(); }
-  else { clearTimeout(timer); drawQ.length=0; setNow(-1); }
+  else { clearTimeout(timer); drawQ.length=0; setNow(-1,0); }
   playBtn.textContent=playing?'Stop':'Play';
 }
 playBtn.addEventListener('click',togglePlay);
 
-const tempo=document.getElementById('tempo'), bpmOut=document.getElementById('bpm');
+const tempo=$('tempo'), bpmOut=$('bpm'), swingEl=$('swing'), swingOut=$('swingOut'), kitEl=$('kit');
 const setBeat=()=>cubeEl.style.setProperty('--beat',(60/bpm)+'s');
-setBeat();
 tempo.addEventListener('input',()=>{ bpm=+tempo.value; bpmOut.textContent=bpm; setBeat(); });
+swingEl.addEventListener('input',()=>{ swing=+swingEl.value; swingOut.textContent=swing; });
+kitEl.addEventListener('change',()=>{ kit=+kitEl.value; if(toneF) toneF.frequency.value=kit?5200:20000; });
+const shuffleBtn=$('shuffle');
+function setShuffle(v){ shuffleOn=v; shuffleBtn.setAttribute('aria-pressed',v); }
+shuffleBtn.addEventListener('click',()=>{ stats.shuffle++; setShuffle(!shuffleOn); });
 
-const shuffleBtn=document.getElementById('shuffle');
-shuffleBtn.addEventListener('click',()=>{ stats.shuffle++; shuffleOn=!shuffleOn; shuffleBtn.setAttribute('aria-pressed',shuffleOn); });
+// bring every control in line with the state
+function syncUI(){
+  tempo.value=bpm; bpmOut.textContent=bpm; setBeat();
+  swingEl.value=swing; swingOut.textContent=swing;
+  kitEl.value=kit; if(toneF) toneF.frequency.value=kit?5200:20000;
+  vol.forEach((v,f)=>{ volEls[f].value=v; if(bus) bus[f].gain.value=v/80; });
+  $('steps8').setAttribute('aria-pressed',!steps16); $('steps16').setAttribute('aria-pressed',steps16);
+  $('pages').hidden=!steps16;
+  $('pageA').setAttribute('aria-pressed',page===0); $('pageB').setAttribute('aria-pressed',page===1);
+  repaintAll(); refreshNow();
+}
+function setSteps(to16){
+  if(to16===steps16) return;
+  pushUndo();
+  const P=pat();
+  steps16=to16; page=0;
+  // keep the beat sounding the same: spread 8 steps across 16, or keep every other step going back
+  setPat(to16 ? P.map(r=>{ const o=new Array(16).fill(0); r.forEach((v,i)=>{ o[i*2]=v; }); return o; })
+              : P.map(r=>r.filter((_,i)=>i%2===0)));
+  step=0; syncUI();
+}
+$('steps8').addEventListener('click',()=>setSteps(false));
+$('steps16').addEventListener('click',()=>setSteps(true));
+function setPage(p){ page=p; syncUI(); }
+$('pageA').addEventListener('click',()=>setPage(0));
+$('pageB').addEventListener('click',()=>setPage(1));
 
-// ---------- actions ----------
-// rows: bass drum, snare, closed hi-hat, open hi-hat, hand clap, low tom; eight steps = 1 & 2 & 3 & 4 &
+// ---------- starter styles (16 steps: 1 e & a 2 e & a 3 e & a 4 e & a) ----------
+// rows: bass drum, snare, closed hi-hat, open hi-hat, hand clap, low tom
+const E='................';
 const STYLES={
-  breakbeat:{ bpm:150, p:[
-    [1,0,0,1,0,1,0,0],
-    [0,0,1,0,0,0,1,1],
-    [1,1,1,1,1,1,1,0],
-    [0,0,0,0,0,0,0,1],
-    [0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0]]},
-  classic:{ bpm:110, p:[
-    [1,0,0,1,1,0,0,0],
-    [0,0,1,0,0,0,1,0],
-    [1,1,1,0,1,1,1,0],
-    [0,0,0,1,0,0,0,1],
-    [0,0,0,0,0,0,1,0],
-    [0,0,0,0,0,1,0,0]]},
-  hiphop:{ bpm:90, p:[
-    [1,1,0,0,0,1,0,0],
-    [0,0,1,0,0,0,1,0],
-    [1,0,1,1,1,0,1,1],
-    [0,0,0,0,0,0,0,0],
-    [0,0,1,0,0,0,1,0],
-    [0,0,0,0,0,0,0,0]]},
-  rnb:{ bpm:75, p:[
-    [1,0,0,0,0,1,0,0],
-    [0,0,0,0,0,0,1,0],
-    [1,1,1,0,1,1,1,1],
-    [0,0,0,1,0,0,0,0],
-    [0,0,1,0,0,0,1,0],
-    [0,0,0,0,0,0,0,0]]},
-  house:{ bpm:124, p:[
-    [1,0,1,0,1,0,1,0],
-    [0,0,0,0,0,0,0,0],
-    [1,0,1,0,1,0,1,0],
-    [0,1,0,1,0,1,0,1],
-    [0,0,1,0,0,0,1,0],
-    [0,0,0,0,0,0,0,1]]},
-  drill:{ bpm:140, p:[
-    [1,0,0,1,0,1,0,0],
-    [0,0,0,0,1,0,0,1],
-    [1,1,1,1,1,1,0,1],
-    [0,0,0,0,0,0,1,0],
-    [0,0,0,0,1,0,0,0],
-    [0,0,0,0,0,0,1,1]]},
+  breakbeat:{ bpm:132, swing:0,  p:['x.x.......xx....','....x..x.x..x..x','x.x.x.x.x.x.x.x.',E,E,E] },
+  classic:  { bpm:110, swing:0,  p:['x.....x.x.......','....x.......x...','x.x.x.x.x.x.x...','..............x.','............x...',E] },
+  hiphop:   { bpm:90,  swing:35, p:['x......x..x.....','....x.......x...','x.x.x.x.x.x.x.x.',E,'....x.......x...',E] },
+  rnb:      { bpm:75,  swing:20, p:['x..x......x.....','............x...','x.xxx.x.x.xxx...','..............x.','....x.......x...',E] },
+  house:    { bpm:124, swing:0,  p:['x...x...x...x...',E,'x..xx..xx..xx..x','..x...x...x...x.','....x.......x...','.............x..'] },
+  drill:    { bpm:140, swing:0,  p:['x.........x..x..','........x.......','x..x..x.x..x.xxx',E,'........x.....x.','...x...........x'] },
 };
-function repaintAll(){ stickers.forEach(paint); renderReadout(); }
-const starterSel=document.getElementById('starter');
+const starterSel=$('starter');
 starterSel.addEventListener('change',()=>{
   const st=STYLES[starterSel.value];
   starterSel.value='';
   if(!st) return;
-  for(let f=0;f<6;f++) for(let k=0;k<8;k++) grid[f][k].on=!!st.p[f][k];
+  pushUndo();
+  steps16=true; page=0; setPat(parseRows(st.p));
   for(let f=0;f<6;f++) muted[f]=false;
-  soloFace=-1;
-  bpm=st.bpm; tempo.value=bpm; bpmOut.textContent=bpm; setBeat();
-  repaintAll();
+  soloFace=-1; bpm=st.bpm; swing=st.swing; step=0;
+  syncUI();
 });
-document.getElementById('clear').addEventListener('click',()=>{ stickers.forEach(s=>s.on=false); repaintAll(); });
-document.getElementById('scramble').addEventListener('click',()=>{ for(let i=0;i<18;i++) randomTurn(70); });
-document.getElementById('solve').addEventListener('click',()=>{
+
+// ---------- actions ----------
+$('undo').addEventListener('click',doUndo);
+function doUndo(){
+  const b=undoStack.pop();
+  $('undo').disabled=!undoStack.length;
+  if(b) restore(b);
+}
+$('clear').addEventListener('click',()=>{ pushUndo(); stickers.forEach(s=>{ s.on=[false,false]; }); repaintAll(); });
+$('scramble').addEventListener('click',()=>{ pushUndo(); for(let i=0;i<18;i++) randomTurn(70,false); });
+function solveNow(){
+  stickers.forEach(s=>{ s.p=s.p0.slice(); s.n=s.n0.slice(); updateLocal(s); place(s); });
+  rebuildGrid(); repaintAll(); refreshNow();
+}
+$('solve').addEventListener('click',()=>{
   stats.solve++; queue.length=0;
-  const finish=()=>{ stickers.forEach(s=>{ s.p=s.p0.slice(); s.n=s.n0.slice(); updateLocal(s); place(s); }); rebuildGrid(); renderReadout(); refreshNow(); };
-  if(busy){ const wait=setInterval(()=>{ if(!busy){ clearInterval(wait); finish(); } },30); } else finish();
+  const go=()=>{ pushUndo(); solveNow(); };
+  if(busy){ const wait=setInterval(()=>{ if(!busy){ clearInterval(wait); go(); } },30); } else go();
 });
 
 // ---------- saved beats ----------
 const KEY='rhythmcube:beats';
-const savedEl=document.getElementById('saved'), nameEl=document.getElementById('beatName'), noteEl=document.getElementById('saveNote');
+const savedEl=$('saved'), nameEl=$('beatName'), noteEl=$('saveNote');
 let beats=[];
 try{ beats=JSON.parse(localStorage.getItem(KEY)||'[]'); if(!Array.isArray(beats)) beats=[]; }catch(e){ beats=[]; }
 function persist(){ try{ localStorage.setItem(KEY, JSON.stringify(beats)); return true; }catch(e){ return false; } }
-function snapshot(){ return { bpm, muted:muted.slice(), s:stickers.map(s=>[s.p.map(v=>v+0), s.n.map(v=>v+0), s.on?1:0]) }; }
-function restore(b){
-  queue.length=0;
-  const go=()=>{
-    if(!b || !Array.isArray(b.s) || b.s.length!==stickers.length) return;
-    b.s.forEach((d,i)=>{ const s=stickers[i]; s.p=d[0].slice(); s.n=d[1].slice(); s.on=!!d[2]; updateLocal(s); place(s); });
-    (b.muted||[]).forEach((m,i)=>{ if(i<6) muted[i]=!!m; });
-    rebuildGrid(); repaintAll(); refreshNow();
-    if(b.bpm){ bpm=Math.max(60,Math.min(180,+b.bpm||120)); tempo.value=bpm; bpmOut.textContent=bpm; setBeat(); }
-  };
-  if(busy){ const w=setInterval(()=>{ if(!busy){ clearInterval(w); go(); } },30); } else go();
-}
 function renderSaved(){
   savedEl.textContent='';
   beats.forEach((b,i)=>{
     const li=document.createElement('li'), sp=document.createElement('span'); sp.textContent=b.name; li.appendChild(sp);
     const ld=document.createElement('button'); ld.type='button'; ld.textContent='Load'; ld.setAttribute('aria-label',`Load ${b.name}`);
-    ld.addEventListener('click',()=>{ restore(b); noteEl.textContent=`Loaded “${b.name}”.`; });
+    ld.addEventListener('click',()=>{ pushUndo(); restore(b); noteEl.textContent=`Loaded “${b.name}”.`; });
     const del=document.createElement('button'); del.type='button'; del.textContent='Delete'; del.setAttribute('aria-label',`Delete ${b.name}`);
     del.addEventListener('click',()=>{ beats.splice(i,1); persist(); renderSaved(); noteEl.textContent=`Deleted “${b.name}”.`; });
     li.append(ld,del); savedEl.appendChild(li);
@@ -723,45 +934,93 @@ function saveBeat(){
   const ok=persist(); renderSaved(); nameEl.value=''; stats.save++;
   noteEl.textContent = ok ? `Saved “${name}”.` : `Saved “${name}” for this visit only. This device isn’t letting the page store data.`;
 }
-document.getElementById('saveBeat').addEventListener('click',saveBeat);
+$('saveBeat').addEventListener('click',saveBeat);
 nameEl.addEventListener('keydown',e=>{ if(e.key==='Enter') saveBeat(); });
 renderSaved();
 
+// ---------- share codes ----------
+// 11 header bytes + one byte per square (which slot it sits in, plus its two lit flags), as URL-safe base64
+function encodeBeat(){
+  const out=new Uint8Array(11+54);
+  out[0]=2; out[1]=(steps16?1:0)|(kit?2:0); out[2]=bpm; out[3]=swing;
+  vol.forEach((v,i)=>{ out[4+i]=v; });
+  out[10]=muted.reduce((m,v,i)=>m|(v?1<<i:0),0);
+  stickers.forEach((s,i)=>{
+    const slot=stickers.findIndex(t=>same(t.p0,s.p)&&same(t.n0,s.n));
+    out[11+i]=slot|(s.on[0]?64:0)|(s.on[1]?128:0);
+  });
+  let str=''; out.forEach(x=>{ str+=String.fromCharCode(x); });
+  return 'RC-'+btoa(str).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function decodeBeat(code){
+  try{
+    let c=String(code).trim().replace(/\s+/g,'').replace(/^RC-/i,'').replace(/-/g,'+').replace(/_/g,'/');
+    while(c.length%4) c+='=';
+    const str=atob(c); if(str.length!==65 || str.charCodeAt(0)!==2) return null;
+    const by=Array.from(str,ch=>ch.charCodeAt(0)), seen=new Set();
+    const s=[];
+    for(let i=0;i<54;i++){
+      const slot=by[11+i]&63; if(slot>=54 || seen.has(slot)) return null; seen.add(slot);
+      if((stickers[i].p0.filter(v=>v!==0).length===1) !== (stickers[slot].p0.filter(v=>v!==0).length===1)) return null;
+      s.push([stickers[slot].p0.slice(), stickers[slot].n0.slice(), by[11+i]&64?1:0, by[11+i]&128?1:0]);
+    }
+    return { v:2, steps16:!!(by[1]&1), kit:by[1]&2?1:0, bpm:by[2], swing:by[3], vol:by.slice(4,10),
+      muted:[0,1,2,3,4,5].map(i=>!!(by[10]&(1<<i))), s };
+  }catch(e){ return null; }
+}
+const shareIn=$('shareIn'), shareNote=$('shareNote');
+$('shareGet').addEventListener('click',()=>{
+  const code=encodeBeat();
+  shareIn.value=code; shareIn.focus(); shareIn.select();
+  const manual=()=>{ shareNote.textContent='Your code is in the box. Copy it and send it to anyone with this page.'; };
+  try{ navigator.clipboard.writeText(code).then(()=>{ shareNote.textContent='Code copied. Send it to anyone with this page and they can load your beat.'; }, manual); }
+  catch(e){ manual(); }
+});
+function loadCode(){
+  const b=decodeBeat(shareIn.value);
+  if(!b){ shareNote.textContent='That doesn’t look like a Rhythm Cube code. Check that you pasted all of it.'; return; }
+  pushUndo(); restore(b); shareIn.value='';
+  shareNote.textContent='Beat loaded from the code.';
+}
+$('shareLoad').addEventListener('click',loadCode);
+shareIn.addEventListener('keydown',e=>{ if(e.key==='Enter') loadCode(); });
+
 // ---------- tutorial ----------
-const $=id=>document.getElementById(id);
 const TUT=[
   { t:'Meet the cube', target:'#stage', done:b=>stats.drag>b.drag,
-    b:'Drag the cube to spin it around. Each of the six faces is one drum, and the plate in the middle of a face shows its name.' },
+    b:'Drag the colored background around the cube to spin it. Each of the six faces is one drum, and the plate in the middle of a face shows its name.' },
   { t:'Hear the drums', target:'#readout', done:b=>stats.aud>=b.aud+2,
     b:'In “The beat right now” grid, tap a drum’s name to hear it. Try at least two different drums.' },
-  { t:'Light your first square', target:'#stage', done:()=>grid[0].some(s=>s.on),
-    b:'Tap a gray square on the green Bass Drum face. It lights up, plays the drum once, and starts to breathe.' },
+  { t:'Light your first square', target:'#stage', done:()=>dg(0).some(s=>s.on[0]||s.on[1]),
+    b:'Tap a gray square on the green Bass Drum face. It lights up and starts to breathe. You won’t hear it until you press Play.' },
   { t:'Press Play', target:'#play', done:()=>playing,
     b:'Press Play. The eight squares around the edge of each face are eight steps, played clockwise from the top-left corner. Lit squares pop out when they sound.' },
-  { t:'Add a backbeat', target:'#readout', done:()=>grid[1][2].on && grid[1][6].on,
+  { t:'Add a backbeat', target:'#readout', done:()=>dg(1)[2].on[0] && dg(1)[6].on[0],
     b:'In the grid, each row is a drum and each column is a step. Light the Snare on steps 3 and 7.' },
   { t:'Mute and solo', target:'#readout', done:b=>stats.ms>b.ms,
     b:'Tap M on a row to silence that drum, or S to hear it on its own. Tap the same button again to switch it back.' },
-  { t:'Change the tempo', target:'.tempo', done:b=>bpm!==b.bpm,
-    b:'Drag the Tempo slider to speed the beat up or slow it down. The lit squares breathe in time with it.' },
-  { t:'Twist a face', target:'#turns', done:b=>stats.turns>b.turns,
-    b:'Under “Turn a face”, press one of the arrow buttons. Lit squares ride to a new drum and a new step, and change to that drum’s color.' },
+  { t:'Change the feel', target:'.transport .tempo,.feel', done:b=>bpm!==b.bpm || swing!==b.swing,
+    b:'Drag the Tempo slider to speed the beat up or slow it down. Then try Swing, which delays every other step for a looser feel.' },
+  { t:'Twist a face', target:'#turns,#stage', done:b=>stats.turns>b.turns,
+    b:'Swipe any square on the cube to twist it, or press an arrow under “Twist the cube”. A middle slice carries the drum labels with it, and a face plays whichever drum’s label it now holds. Lit squares ride to a new drum and step, and change to that drum’s color.' },
   { t:'Shuffle, then Solve', target:'#shuffle,#solve', done:b=>stats.shuffle>b.shuffle && stats.solve>b.solve,
-    b:'Turn on Shuffle and let the cube remix itself for a few bars. Then turn Shuffle off and press Solve to get your original beat back.' },
-  { t:'Keep your beat', target:'#starter,#saveBeat,#download', done:b=>stats.save>b.save || stats.dl>b.dl,
+    b:'Turn on Shuffle and let the cube remix itself for a few bars. Then turn Shuffle off and press Solve to get your original beat back. Undo also steps back one change at a time.' },
+  { t:'Keep your beat', target:'#starter,#saveBeat,#download,#shareGet', done:b=>stats.save>b.save || stats.dl>b.dl,
     b:'Pick a style from “Start with a beat…” if you want a head start. Then name your beat and press Save, or press Download beat to take it with you.' },
 ];
 const tutBar=[]; TUT.forEach(()=>{ const i=document.createElement('i'); tutBar.push(i); $('tutBar').appendChild(i); });
 let tutI=-1, tutBase=null, tutOk=false;
+const clearTargets=()=>document.querySelectorAll('.tut-target').forEach(e=>e.classList.remove('tut-target'));
+function showIdle(text){
+  clearTargets(); tutI=-1; chI=-1;
+  $('tutRun').hidden=true; $('chRun').hidden=true; $('tutIdle').hidden=false;
+  if(text) $('tutIdleText').textContent=text;
+}
 function tutShow(i, finished){
-  document.querySelectorAll('.tut-target').forEach(e=>e.classList.remove('tut-target'));
-  if(i<0 || i>=TUT.length){
-    tutI=-1; $('tutRun').hidden=true; $('tutIdle').hidden=false;
-    if(finished){ $('tutIdleText').textContent='You finished the tutorial. Run it again any time.'; $('tutStart').textContent='Restart the tutorial'; }
-    return;
-  }
-  const s=TUT[i]; tutI=i; tutBase=Object.assign({bpm}, stats); tutOk=false;
-  $('tutIdle').hidden=true; $('tutRun').hidden=false;
+  clearTargets();
+  if(i<0 || i>=TUT.length){ showIdle(finished ? 'You finished the tutorial. Ready for the challenges?' : ''); return; }
+  const s=TUT[i]; tutI=i; tutBase=Object.assign({bpm,swing}, stats); tutOk=false;
+  $('tutIdle').hidden=true; $('chRun').hidden=true; $('tutRun').hidden=false;
   $('tutCount').textContent=`Step ${i+1} of ${TUT.length}`;
   $('tutTitle').textContent=s.t; $('tutBody').textContent=s.b; $('tutDone').textContent='';
   $('tutBack').disabled = i===0;
@@ -769,15 +1028,77 @@ function tutShow(i, finished){
   tutBar.forEach((b,k)=>b.classList.toggle('on', k<=i));
   document.querySelectorAll(s.target).forEach(e=>e.classList.add('tut-target'));
 }
-setInterval(()=>{
-  if(tutI<0 || tutOk) return;
-  let ok=false; try{ ok=TUT[tutI].done(tutBase); }catch(e){}
-  if(ok){ tutOk=true; $('tutDone').textContent = tutI===TUT.length-1 ? 'That’s all ten. Press Finish.' : 'Got it. Press Next.'; $('tutNext').classList.add('go'); }
-},250);
 $('tutStart').addEventListener('click',()=>tutShow(0));
 $('tutBack').addEventListener('click',()=>tutShow(Math.max(0,tutI-1)));
 $('tutNext').addEventListener('click',()=>{ if(tutI===TUT.length-1) tutShow(-1,true); else tutShow(tutI+1); });
 $('tutEnd').addEventListener('click',()=>tutShow(-1));
+
+// ---------- challenges ----------
+const UNTWIST=['x..xx...','..x...x.','x.x.x.x.','...x...x','......x.','........'];
+const CHALLENGES=[
+  { type:'echo', t:'Echo 1', bpm:100, p:['x...x...','..x...x.','','','',''] },
+  { type:'echo', t:'Echo 2', bpm:100, p:['x..xx...','..x...x.','x.x.x.x.','','',''] },
+  { type:'echo', t:'Echo 3', bpm:96,  p:['x..x.x..','..x...x.','x.xxx.xx','','......x.',''] },
+  { type:'untwist', t:'Untwist 1', n:1 },
+  { type:'untwist', t:'Untwist 2', n:2 },
+  { type:'untwist', t:'Untwist 3', n:3 },
+];
+let chI=-1, chTarget=null, chBase=0, chOk=false;
+function chShow(i){
+  clearTargets();
+  if(i<0 || i>=CHALLENGES.length){ showIdle(i>=CHALLENGES.length ? 'You finished all six challenges. Nice work.' : ''); return; }
+  const start=()=>{
+    const c=CHALLENGES[i]; chI=i; chOk=false; tutI=-1;
+    if(playing) togglePlay();
+    setShuffle(false); pushUndo();
+    steps16=false; page=0; swing=0; soloFace=-1; for(let f=0;f<6;f++) muted[f]=false;
+    if(c.type==='echo'){
+      stickers.forEach(s=>{ s.on=[false,false]; });
+      bpm=c.bpm; chTarget=parseRows(c.p.map(r=>r||'........'));
+      const used=FACES.filter((F,f)=>chTarget[f].some(Boolean)).map(F=>F.name);
+      $('chBody').textContent=`Press “Hear the target”, then rebuild that beat from scratch by ear. It uses ${used.slice(0,-1).join(', ')}${used.length>1?' and ':''}${used[used.length-1]}.`;
+    } else {
+      solveNow(); setPat(parseRows(UNTWIST)); chTarget=pat();
+      do{ for(let k=0;k<c.n;k++) randomTurn(0,false,false); }while(samePat(pat(),chTarget));
+      bpm=104;
+      $('chBody').textContent=`This beat was in order until ${c.n===1?'one face got a quarter turn':c.n+' faces got a quarter turn each'}. Twist the cube to put the beat back. “Hear the target” plays how it should sound.`;
+    }
+    chBase=stats.turns; step=0; syncUI();
+    $('tutIdle').hidden=true; $('tutRun').hidden=true; $('chRun').hidden=false;
+    $('chCount').textContent=`Challenge ${i+1} of ${CHALLENGES.length}`;
+    $('chTitle').textContent=c.t; $('chDone').textContent='';
+    $('chNext').textContent='Skip'; $('chNext').classList.remove('go');
+    document.querySelectorAll(c.type==='echo' ? '#readout' : '#turns,#stage').forEach(e=>e.classList.add('tut-target'));
+  };
+  queue.length=0;
+  if(busy){ const w=setInterval(()=>{ if(!busy){ clearInterval(w); start(); } },30); } else start();
+}
+function playTarget(){
+  if(!chTarget) return;
+  ensureAudio(); if(playing) togglePlay();
+  const sd=60/bpm/2, t0=ctx.currentTime+.08;
+  for(let b=0;b<2;b++) for(let k=0;k<8;k++) for(let f=0;f<6;f++) if(chTarget[f][k]) fire(f, t0+(b*8+k)*sd);
+  $('chHear').disabled=true; setTimeout(()=>{ $('chHear').disabled=false; }, 16*sd*1000+200);
+}
+$('chStart').addEventListener('click',()=>chShow(0));
+$('chHear').addEventListener('click',playTarget);
+$('chNext').addEventListener('click',()=>chShow(chI+1));
+$('chEnd').addEventListener('click',()=>chShow(-1));
+
+setInterval(()=>{
+  if(tutI>=0 && !tutOk){
+    let ok=false; try{ ok=TUT[tutI].done(tutBase); }catch(e){}
+    if(ok){ tutOk=true; $('tutDone').textContent = tutI===TUT.length-1 ? 'That’s all ten. Press Finish.' : 'Got it. Press Next.'; $('tutNext').classList.add('go'); }
+  }
+  if(chI>=0 && !chOk && !busy){
+    const c=CHALLENGES[chI], used=stats.turns-chBase;
+    if(!steps16 && samePat(pat(),chTarget)){
+      chOk=true;
+      $('chDone').textContent = c.type==='echo' ? 'You matched it. Press Play to hear your version.' : `Back in order in ${used} ${used===1?'turn':'turns'}.`;
+      $('chNext').textContent = chI===CHALLENGES.length-1 ? 'Finish' : 'Next challenge'; $('chNext').classList.add('go');
+    } else if(c.type==='untwist') $('chDone').textContent = used ? `Turns used: ${used}` : '';
+  }
+},250);
 
 // ---------- download ----------
 function crc32(u8){
@@ -811,29 +1132,24 @@ function zipOne(name, data){ // one uncompressed file in a zip
   return out;
 }
 async function renderBeat(bars){
-  const sr=44100, stepDur=60/bpm/2, len=Math.ceil((bars*8*stepDur+1.3)*sr);
+  const sr=44100, n=steps16?16:8, sd=stepDur(), len=Math.ceil((bars*n*sd+1.3)*sr);
   const OC=window.OfflineAudioContext||window.webkitOfflineAudioContext;
   const off=new OC(2,len,sr);
-  const live={ctx,master,noiseBuf,openChoke};
+  const live={ctx,master,noiseBuf,bus,openChoke};
   try{
-    ctx=off;
-    const comp=off.createDynamicsCompressor(); comp.threshold.value=-14; comp.ratio.value=4;
-    master=off.createGain(); master.gain.value=.85; master.connect(comp); comp.connect(off.destination);
-    noiseBuf=off.createBuffer(1,sr,sr);
-    const d=noiseBuf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
-    openChoke=null;
-    for(let b=0;b<bars;b++) for(let k=0;k<8;k++){
-      const t=.02+(b*8+k)*stepDur;
-      for(let f=0;f<6;f++) if(audible(f) && grid[f][k].on) VOICES[f](t);
+    ctx=off; const g=buildGraph(off); master=g.master; bus=g.bus; noiseBuf=g.noiseBuf; openChoke=null;
+    for(let b=0;b<bars;b++) for(let i=0;i<n;i++){
+      const t=.02+(b*n+i)*sd+swingDelay(i);
+      for(let f=0;f<6;f++){ const d=drumOf[f]; if(audible(d) && grid[f][i&7].on[i>>3]) fire(d,t); }
     }
-  } finally { ctx=live.ctx; master=live.master; noiseBuf=live.noiseBuf; openChoke=live.openChoke; }
+  } finally { ctx=live.ctx; master=live.master; noiseBuf=live.noiseBuf; bus=live.bus; openChoke=live.openChoke; }
   return await off.startRendering();
 }
 let downloadsP=Promise.resolve(null);
 try{ if(window.claude && typeof window.claude.use==='function') downloadsP=window.claude.use('downloads').catch(()=>null); }catch(e){}
 const dlBtn=$('download'), dlNote=$('dlNote');
 dlBtn.addEventListener('click', async()=>{
-  if(!stickers.some(s=>s.on && s.step>=0)){ dlNote.textContent='Light a few squares first, then download.'; return; }
+  if(!stickers.some(s=>s.step>=0 && (s.on[0] || (steps16 && s.on[1])))){ dlNote.textContent='Light a few squares first, then download.'; return; }
   dlBtn.disabled=true; dlNote.textContent='Rendering four bars…';
   try{
     const wav=wavBytes(await renderBeat(4)), base=`rhythm-cube-${bpm}bpm`;
@@ -857,11 +1173,40 @@ dlBtn.addEventListener('click', async()=>{
 
 document.addEventListener('keydown',e=>{
   if(e.target.closest && e.target.closest('input,textarea,select')) return;
+  if((e.metaKey||e.ctrlKey) && !e.shiftKey && e.key.toLowerCase()==='z'){ e.preventDefault(); doUndo(); return; }
   if(e.metaKey||e.ctrlKey||e.altKey) return;
   if(e.code==='Space' && (e.target===document.body || e.target===scene)){ e.preventDefault(); togglePlay(); return; }
+  const sk={M:0,E:1,S:2}[e.key.toUpperCase()];
+  if(sk!==undefined && e.key.length===1){ e.preventDefault(); turn(6+sk, e.shiftKey?-1:1); return; }
   const f=FACES.findIndex(F=>F.key===e.key.toUpperCase());
   if(f>=0 && e.key.length===1){ e.preventDefault(); turn(f, e.shiftKey?-1:1); }
 });
+
+// ---------- simple view for touch devices ----------
+// Phones and tablets (touch is the main input) get the cube with Play/Stop and Tempo only. Laptops and desktops get everything.
+// Ending the link with #simple or #full forces one view or the other, handy for previewing on a computer.
+const touchMQ=window.matchMedia('(hover: none) and (pointer: coarse)');
+let layoutSimple=false;
+function updateLayout(){
+  const h=location.hash.replace('#','');
+  const simple = h==='simple' ? true : h==='full' ? false : touchMQ.matches;
+  document.documentElement.dataset.view = simple ? 'simple' : 'full';
+  if(simple && !layoutSimple){
+    showIdle(); setShuffle(false);
+    // with no beat menu on this view, start with something playable
+    if(!stickers.some(s=>s.step>=0 && (s.on[0]||s.on[1]))){
+      steps16=false; page=0; swing=0; bpm=110; step=0;
+      setPat(parseRows(['x..xx...','..x...x.','xxx.xxx.','...x...x','......x.','.....x..']));
+      syncUI();
+    }
+  }
+  layoutSimple=simple;
+}
+if(touchMQ.addEventListener) touchMQ.addEventListener('change',updateLayout); else if(touchMQ.addListener) touchMQ.addListener(updateLayout);
+window.addEventListener('hashchange',updateLayout);
+
+syncUI();
+updateLayout();
 })();
 </script>
 </body>
