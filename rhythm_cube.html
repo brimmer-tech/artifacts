@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Rhythm Cube</title>
-<script>(function(){var h=location.hash.replace('#',''),t=window.matchMedia&&matchMedia('(hover: none) and (pointer: coarse)').matches;document.documentElement.dataset.view=(h==='simple'||(h!=='full'&&t))?'simple':'full';})();</script>
+<script>(function(){var h=location.hash.replace('#',''),t=(window.matchMedia&&matchMedia('(hover: none) and (pointer: coarse)').matches)||(navigator.maxTouchPoints>1&&/Macintosh/.test(navigator.userAgent));document.documentElement.dataset.view=(h==='simple'||(h!=='full'&&t))?'simple':'full';})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
@@ -160,7 +160,7 @@ details{border-top:1px solid var(--line);padding-top:12px}
 summary{cursor:pointer;font-weight:700}
 details p{margin:.6em 0 0;max-width:62ch;color:var(--ink-soft);font-size:.95rem}
 .credit{margin:18px 0 0;font-size:.82rem;color:var(--ink-soft)}
-@media (prefers-reduced-motion:reduce){.face,.cap{transition:none}.tile.on .face{animation:none}.tile.hit .cap{transform:none}}
+@media (prefers-reduced-motion:reduce){:root:not([data-motion="on"]) .face,:root:not([data-motion="on"]) .cap{transition:none}:root:not([data-motion="on"]) .tile.on .face{animation:none}:root:not([data-motion="on"]) .tile.hit .cap{transform:none}}
 button:disabled{opacity:.45;cursor:default}
 .feel{display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px}
 .seg{display:flex;align-items:center;gap:6px;font-weight:600}
@@ -196,6 +196,12 @@ button:disabled{opacity:.45;cursor:default}
 [data-view="simple"] .tempo input{height:32px}
 [data-view="simple"] #play{min-width:6rem;padding:.8em 1.2em;font-size:1.15rem}
 [data-view="simple"] .credit{margin-top:12px}
+.only-simple{display:none}
+[data-view="simple"] .only-simple{display:block}
+.fresh-row{margin-top:12px}
+.fresh-row button{padding:.6em 1.1em}
+.motion-note{margin:12px 0 0;max-width:60ch;font-size:.88rem;color:var(--ink-soft)}
+.motion-note button{padding:.25em .7em;font-size:.88rem}
 </style>
 </head>
 <body>
@@ -328,6 +334,11 @@ button:disabled{opacity:.45;cursor:default}
       </details>
     </section>
   </main>
+  <div class="fresh-row only-simple">
+    <button id="fresh" type="button">Start fresh</button>
+    <p class="save-note" id="freshNote" role="status"></p>
+  </div>
+  <p class="motion-note" id="motionNote" hidden><span id="motionText"></span> <button id="motionBtn" type="button"></button></p>
   <p class="credit">Drum sounds are synthesized live in your browser.</p>
 </div>
 
@@ -344,7 +355,9 @@ const FACES = [
 ];
 // local 3x3 index (row*3+col) -> step; edge squares clockwise from top-left, center = -1
 const STEP_OF = {0:0,1:1,2:2,5:3,8:4,7:5,6:6,3:7,4:-1};
-const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const reduceMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
+let motionForced = false;   // set when the person turns animations on despite Reduce Motion
+const motionOff = () => reduceMQ.matches && !motionForced;
 
 const faceIndex = n => FACES.findIndex(f => f.n[0]===n[0] && f.n[1]===n[1] && f.n[2]===n[2]);
 function localIndex(p, f){
@@ -561,7 +574,7 @@ function doTurn({f,dir,dur,undo}, done){
     layer.forEach(st=>{ st.p=rot(st.p,a,s); st.n=rot(st.n,a,s); updateLocal(st); place(st); });
     rebuildGrid(); repaintAll(); refreshNow(); done();
   };
-  if(reduceMotion || dur===0){ apply(); return; }
+  if(motionOff() || dur===0){ apply(); return; }
   const L=document.createElement('div'); L.className='layer'; cubeEl.appendChild(L);
   const moving=mid ? layer : layer.filter(st=>st!==centers[f]);
   moving.forEach(st=>L.appendChild(st.el));
@@ -1189,7 +1202,7 @@ const touchMQ=window.matchMedia('(hover: none) and (pointer: coarse)');
 let layoutSimple=false;
 function updateLayout(){
   const h=location.hash.replace('#','');
-  const simple = h==='simple' ? true : h==='full' ? false : touchMQ.matches;
+  const simple = h==='simple' ? true : h==='full' ? false : (touchMQ.matches || (navigator.maxTouchPoints>1 && /Macintosh/.test(navigator.userAgent)));
   document.documentElement.dataset.view = simple ? 'simple' : 'full';
   if(simple && !layoutSimple){
     showIdle(); setShuffle(false);
@@ -1205,8 +1218,52 @@ function updateLayout(){
 if(touchMQ.addEventListener) touchMQ.addEventListener('change',updateLayout); else if(touchMQ.addListener) touchMQ.addListener(updateLayout);
 window.addEventListener('hashchange',updateLayout);
 
+// ---------- start fresh (touch view) ----------
+// Puts everything back to a blank cube: squares, scramble, drum labels, mute/solo, volumes, tempo, swing, steps and kit.
+// Beats saved with "Save" are kept; they live separately in this browser.
+function startFresh(){
+  queue.length=0;
+  const go=()=>{
+    if(playing) togglePlay();
+    setShuffle(false); showIdle();
+    undoStack.length=0; $('undo').disabled=true;
+    stickers.forEach(st=>{ st.p=st.p0.slice(); st.n=st.n0.slice(); st.on=[false,false]; updateLocal(st); place(st); });
+    for(let f=0;f<6;f++){ muted[f]=false; vol[f]=80; }
+    soloFace=-1; bpm=120; swing=0; steps16=false; page=0; kit=0; step=0;
+    rebuildGrid(); syncUI();
+    ['beatName','shareIn'].forEach(id=>{ $(id).value=''; });
+    ['dlNote','saveNote','shareNote'].forEach(id=>{ $(id).textContent=''; });
+    $('freshNote').textContent='Cleared. You have a blank cube.';
+  };
+  if(busy){ const w=setInterval(()=>{ if(!busy){ clearInterval(w); go(); } },30); } else go();
+}
+let freshTimer=null;
+$('fresh').addEventListener('click',()=>{
+  const btn=$('fresh');
+  if(!freshTimer){   // first tap asks, second tap clears, so a stray touch can't wipe a beat
+    btn.textContent='Tap again to clear everything'; $('freshNote').textContent='';
+    freshTimer=setTimeout(()=>{ freshTimer=null; btn.textContent='Start fresh'; },3500);
+    return;
+  }
+  clearTimeout(freshTimer); freshTimer=null; btn.textContent='Start fresh'; startFresh();
+});
+
+// ---------- motion ----------
+// The page keeps its animations off when the device has Reduce Motion on. This lets someone turn them on for the current visit.
+function updateMotion(){
+  document.documentElement.dataset.motion = motionForced ? 'on' : '';
+  $('motionNote').hidden = !reduceMQ.matches;
+  if(reduceMQ.matches){
+    $('motionText').textContent = motionForced ? 'Animations are on for this visit, even though Reduce Motion is on for this device.' : 'Animations are off because Reduce Motion is turned on for this device.';
+    $('motionBtn').textContent = motionForced ? 'Turn animations off' : 'Turn animations on';
+  }
+}
+$('motionBtn').addEventListener('click',()=>{ motionForced=!motionForced; updateMotion(); });
+if(reduceMQ.addEventListener) reduceMQ.addEventListener('change',updateMotion); else if(reduceMQ.addListener) reduceMQ.addListener(updateMotion);
+
 syncUI();
 updateLayout();
+updateMotion();
 })();
 </script>
 </body>
