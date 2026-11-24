@@ -694,6 +694,7 @@ FACES.forEach((F,f)=>{
 
 // ---------- audio ----------
 let ctx=null, master=null, noiseBuf=null, bus=null, toneF=null, silentEl=null;
+let audioStale=false;   // set when the phone slept or the page was backgrounded: the old audio context can't be trusted
 function silentWav(){
   const n=2205, b=new Uint8Array(44+n), v=new DataView(b.buffer);
   const w=(o,s)=>{ for(let i=0;i<s.length;i++) b[o+i]=s.charCodeAt(i); };
@@ -722,10 +723,18 @@ function buildGraph(c){
 }
 function ensureAudio(){
   unlockAudio();
+  // After sleep, or if the browser closed or interrupted it, the old audio context can be dead (or "running" but silent on iOS).
+  // So build a fresh one, and do it inside this tap, which is the only moment iOS lets a new one start.
+  if(ctx && (audioStale || ctx.state==='closed' || ctx.state==='interrupted')){
+    const old=ctx; ctx=null;
+    try{ const c=old.close(); if(c && c.catch) c.catch(()=>{}); }catch(e){}
+  }
+  audioStale=false;
   if(ctx){ if(ctx.state!=='running'){ const p=ctx.resume(); if(p && p.catch) p.catch(()=>{}); } return; }
   ctx=new (window.AudioContext||window.webkitAudioContext)();
   if(ctx.state!=='running'){ const p=ctx.resume(); if(p && p.catch) p.catch(()=>{}); }
-  const g=buildGraph(ctx); master=g.master; bus=g.bus; noiseBuf=g.noiseBuf; toneF=g.tone;
+  const g=buildGraph(ctx); master=g.master; bus=g.bus; noiseBuf=g.noiseBuf; toneF=g.tone; openChoke=null;
+  if(playing){ nextTime=ctx.currentTime+.06; drawQ.length=0; }   // keep the beat going on the new context
 }
 // play drum f at time t through that drum's own volume control
 function fire(f, t){ const m=master; master=bus[f]; try{ VOICES[f](t); } finally{ master=m; } }
@@ -788,7 +797,13 @@ function lowTom(t){
 }
 const VOICES=[kick,snare,hat,openHat,clap,lowTom];
 ['touchend','click','keydown'].forEach(ev=>document.addEventListener(ev,()=>{ try{ ensureAudio(); }catch(e){} },{passive:true}));
-document.addEventListener('visibilitychange',()=>{ if(document.hidden && silentEl) silentEl.pause(); });
+// On phones and tablets, locking the screen or leaving the page ends playback and marks the audio for a fresh start,
+// so coming back shows Play (not a Stop button over silence) and the next tap brings the sound back.
+const onTouchDevice = () => touchMQ.matches || (navigator.maxTouchPoints>1 && /Macintosh/.test(navigator.userAgent));
+function wentToSleep(){ if(!onTouchDevice()) return; audioStale=true; stopPlayback(); }
+document.addEventListener('visibilitychange',()=>{ if(document.hidden){ if(silentEl) silentEl.pause(); wentToSleep(); } });
+window.addEventListener('pagehide',wentToSleep);
+window.addEventListener('pageshow',e=>{ if(e.persisted) wentToSleep(); });
 
 // ---------- sequencer ----------
 let playing=false, shuffleOn=false, step=0, nextTime=0, timer=null, nowStep=-1, nowPage=0;
@@ -821,7 +836,10 @@ function setNow(k, pg, doPop=true){
   nums[k].classList.add('on');
 }
 const refreshNow=()=>{ if(playing) setNow(nowStep,nowPage,false); };
+let lastFrame=performance.now();
 function draw(){
+  // a long gap between frames means the device slept with the page open (some in-app views send no visibility event)
+  const nowT=performance.now(); if(nowT-lastFrame>2000) wentToSleep(); lastFrame=nowT;
   if(ctx && playing){
     while(drawQ.length && drawQ[0].t<=ctx.currentTime){
       const d=drawQ.shift(); setNow(d.k,d.pg);
@@ -840,6 +858,7 @@ function togglePlay(){
   else { clearTimeout(timer); drawQ.length=0; setNow(-1,0); }
   playBtn.textContent=playing?'Stop':'Play';
 }
+function stopPlayback(){ if(!playing) return; playing=false; clearTimeout(timer); drawQ.length=0; setNow(-1,0); playBtn.textContent='Play'; }
 playBtn.addEventListener('click',togglePlay);
 
 const tempo=$('tempo'), bpmOut=$('bpm'), swingEl=$('swing'), swingOut=$('swingOut'), kitEl=$('kit');
