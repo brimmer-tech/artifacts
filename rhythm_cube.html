@@ -50,10 +50,12 @@ body{margin:0;background:var(--bg);color:var(--ink);
   font-family:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:16px;line-height:1.5}
 .wrap{max-width:1180px;margin:0 auto;padding:clamp(18px,3vw,32px) clamp(14px,4vw,40px) 40px}
 header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 24px;margin-bottom:22px}
-.head-title{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 24px}
+.head-title{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.title-row{display:flex;align-items:center;gap:14px}
+.brand-logo{width:clamp(46px,6vw,64px);height:auto;display:block;flex:none;image-rendering:pixelated;filter:drop-shadow(0 2px 4px rgba(0,0,0,.18))}
 h1{margin:0;font-size:clamp(2.4rem,6.5vw,4.5rem);font-weight:900;font-stretch:125%;
   letter-spacing:-.03em;line-height:.88}
-.sub{margin:0;max-width:42ch;color:var(--ink-soft);font-stretch:90%}
+.sub{margin:0;max-width:46ch;color:var(--ink-soft);font-stretch:90%}
 .head-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .head-controls button{padding:.38em .8em;font-size:.86rem;font-weight:600}
 
@@ -64,7 +66,6 @@ main{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(330px,1fr);gap:2
   .col-left{grid-column:1;grid-row:1}
   .col-left .stage{flex:1;height:auto;min-height:440px}
   .panel{grid-column:2;grid-row:1}
-  .twist-panel{grid-column:1 / -1;grid-row:2}
 }
 [hidden]{display:none!important}
 
@@ -155,8 +156,8 @@ main{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(330px,1fr);gap:2
 .tile.center.muted .dots{opacity:.4}
 .hint{position:absolute;left:0;right:0;bottom:12px;margin:0;text-align:center;font-size:.85rem;color:rgba(255,255,255,.85);text-shadow:0 1px 2px rgba(0,0,0,.35);pointer-events:none}
 
-/* Panel & full-width Twist panel */
-.panel,.twist-panel{background:var(--panel);border-radius:20px;padding:20px}
+/* Panel */
+.panel{background:var(--panel);border-radius:20px;padding:20px}
 .panel{display:flex;flex-direction:column;gap:20px}
 button{font:inherit;color:var(--ink);background:var(--key);border:1px solid var(--line);border-radius:8px;
   padding:.5em .9em;cursor:pointer}
@@ -195,13 +196,13 @@ button[aria-pressed="true"].toggle{background:var(--ink);color:var(--bg);border-
   .readout .row-name{white-space:normal;font-size:.8rem;line-height:1.1}
 }
 
-/* Twist the cube full-width 3x3 grid */
-.turns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-@media (max-width:880px){.turns{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* Twist the cube tucked drawer grid */
+.turns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
 @media (max-width:520px){.turns{grid-template-columns:1fr}}
 .turn{display:flex;align-items:center;gap:6px;background:var(--key-off);border-radius:10px;padding:6px 6px 6px 10px}
 .turn span{flex:1;font-size:.88rem;font-weight:600;font-stretch:85%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .turn button{padding:.2em .52em;font-size:1rem;line-height:1.2}
+.turn.slice{grid-column:1 / -1}
 .turn.slice span{font-size:.84rem}
 
 select{font:inherit;color:var(--ink);background:var(--key);border:1px solid var(--line);border-radius:8px;padding:.45em .6em;cursor:pointer}
@@ -249,7 +250,6 @@ button:disabled{opacity:.45;cursor:default}
 
 /* Simple view (phones/tablets or manual toggle) */
 [data-view="simple"] .tut,
-[data-view="simple"] .twist-panel,
 [data-view="simple"] .panel > :not(.transport){display:none!important}
 [data-view="simple"] #shuffle,
 [data-view="simple"] #previewToggle{display:none}
@@ -274,8 +274,11 @@ button:disabled{opacity:.45;cursor:default}
 <div class="wrap">
   <header>
     <div class="head-title">
-      <h1>Rhythm Cube</h1>
-      <p class="sub">A drum machine you can scramble. Light up squares to build a beat, then twist the faces and hear it rearrange.</p>
+      <div class="title-row">
+        <h1>Rhythm Cube</h1>
+        <img class="brand-logo" src="data:image/png;base64,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" width="88" height="96" alt="Rhythm Cube logo">
+      </div>
+      <p class="sub">Click squares to build a beat. Twist the faces and hear it rearrange.</p>
     </div>
     <div class="head-controls">
       <button id="numsToggle" class="toggle" type="button" aria-pressed="false">Numbers</button>
@@ -370,6 +373,11 @@ button:disabled{opacity:.45;cursor:default}
         <div class="mix-rows" id="mix"></div>
       </details>
 
+      <details class="twist-drawer" id="twistDetails">
+        <summary>Twist the cube</summary>
+        <div class="turns" id="turns"></div>
+      </details>
+
       <div>
         <div class="actions">
           <select id="starter" aria-label="Start with a beat style">
@@ -419,16 +427,12 @@ button:disabled{opacity:.45;cursor:default}
       <details>
         <summary>How it works</summary>
         <p>Each face of the cube is one drum. The eight squares around the edge are eight steps, played clockwise starting from the top-left corner. Tap a square to cycle Off → Normal → Accent (louder hit). The center square names the drum; tap it to mute or unmute that drum. In the grid, tap a drum’s name to hear it, M to mute it, or S to hear it on its own.</p>
-        <p>Turning a face carries lit squares onto neighboring faces, so they land on a different drum and a different step, and take on that drum’s color. Swipe any square on the cube to twist a face or a middle slice, or use the arrow buttons below. A middle slice carries lit squares across four faces and takes the center drum labels with it.</p>
+        <p>Turning a face carries lit squares onto neighboring faces, so they land on a different drum and a different step, and take on that drum’s color. Swipe any square on the cube to twist a face or a middle slice, or open “Twist the cube” for arrow buttons. A middle slice carries lit squares across four faces and takes the center drum labels with it.</p>
         <p>With Steps set to 16, the bar has sixteen faster steps. Switching between 8 and 16 while playing stays seamlessly in the pocket. Turn on Follow to automatically flip between Steps 1–8 and Steps 9–16 during playback.</p>
         <p>Keyboard: press U, D, L, R, F or B to turn a face clockwise, M, E or S for a middle slice, add Shift to turn the other way, press Space to start or stop from anywhere, and Ctrl/Command + Z to undo.</p>
       </details>
     </section>
 
-    <section class="twist-panel" aria-label="Twist the cube controls">
-      <h2 class="section-title">Twist the cube</h2>
-      <div class="turns" id="turns"></div>
-    </section>
   </main>
 
   <div class="fresh-row only-simple">
@@ -1260,8 +1264,8 @@ const TUT=[
     b:'Tap M on a row to silence that drum, or S to hear it on its own. Tap the same button again to switch it back.' },
   { t:'Change the feel', target:'.transport .tempo,.feel', done:b=>bpm!==b.bpm || swing!==b.swing,
     b:'Drag the Tempo slider (or tap Tap) to change speed. Try Swing for a looser feel, or switch the Kit dropdown.' },
-  { t:'Twist a face', target:'#turns,#stage', done:b=>stats.turns>b.turns,
-    b:'Swipe any square on the cube to twist it, or press an arrow under “Twist the cube”. Lit squares ride to a new drum and step, and take on that drum’s color.' },
+  { t:'Twist a face', target:'#twistDetails,#stage', done:b=>stats.turns>b.turns,
+    b:'Swipe any square on the cube to twist it, or open “Twist the cube” for arrow buttons. Lit squares ride to a new drum and step, and take on that drum’s color.' },
   { t:'Shuffle, then Solve', target:'#shuffle,#solve', done:b=>stats.shuffle>b.shuffle && stats.solve>b.solve,
     b:'Turn on Shuffle and let the cube remix itself for a few bars. Then turn Shuffle off and press Solve to get your original beat back.' },
   { t:'Keep your beat', target:'#starter,#saveBeat,#download,#shareGet', done:b=>stats.save>b.save || stats.dl>b.dl,
@@ -1327,7 +1331,7 @@ function chShow(i){
     $('chCount').textContent=`Challenge ${i+1} of ${CHALLENGES.length}`;
     $('chTitle').textContent=c.t; $('chDone').textContent='';
     $('chNext').textContent='Skip'; $('chNext').classList.remove('go');
-    document.querySelectorAll(c.type==='echo' ? '#readout' : '#turns,#stage').forEach(e=>e.classList.add('tut-target'));
+    document.querySelectorAll(c.type==='echo' ? '#readout' : '#twistDetails,#stage').forEach(e=>e.classList.add('tut-target'));
   };
   queue.length=0;
   if(busy){ const w=setInterval(()=>{ if(!busy){ clearInterval(w); start(); } },30); } else start();
